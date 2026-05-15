@@ -1,0 +1,26 @@
+{
+  "name": "@hack/indexer",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.21.55",
+    "pg": "^8.13.1",
+    "ioredis": "^5.4.2",
+    "pino": "^9.5.0",
+    "@hack/shared": "workspace:*",
+    "@hack/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "hackathon-avalanche",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Mercado secundario regulado para participaciones IFC sobre Avalanche",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "compile": "turbo run compile",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,sol}\""
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.2",
+    "prettier": "^3.4.2",
+    "prettier-plugin-solidity": "^1.4.1"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}
