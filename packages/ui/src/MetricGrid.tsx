@@ -1,0 +1,10 @@
+import type { HTMLAttributes } from 'react';
+import { cn } from './lib/cn';
+
+export function MetricGrid({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-4', className)} {...props}>
+      {children}
+    </div>
+  );
+}

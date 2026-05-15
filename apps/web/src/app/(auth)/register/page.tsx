@@ -1,0 +1,160 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { RegisterSchema, type RegisterDto } from '@hack/shared';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Input,
+  Label,
+} from '@hack/ui';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
+function passwordScore(pw: string) {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  return s;
+}
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterDto>({
+    resolver: zodResolver(RegisterSchema),
+    defaultValues: { role: 'investor' },
+  });
+  const [accept, setAccept] = useState(false);
+
+  const password = watch('password') ?? '';
+  const score = useMemo(() => passwordScore(password), [password]);
+
+  const onSubmit = async (data: RegisterDto) => {
+    if (!accept) {
+      toast.error('Debes aceptar los términos.');
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 700));
+    toast.success(`Cuenta creada para ${data.email}`);
+    router.push('/onboarding');
+  };
+
+  const strengthLabels = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Excelente'];
+
+  return (
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Crea tu cuenta</CardTitle>
+        <CardDescription>Empieza tu KYC y conecta tu wallet en minutos.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email" required>
+              Correo electrónico
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              invalid={Boolean(errors.email)}
+              {...register('email')}
+            />
+            {errors.email && <p className="text-xs text-danger-fg">{errors.email.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password" required>
+              Contraseña
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              invalid={Boolean(errors.password)}
+              {...register('password')}
+            />
+            <div className="grid grid-cols-4 gap-1 pt-1">
+              {[0, 1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className={`h-1 rounded-full ${
+                    i < score
+                      ? score <= 1
+                        ? 'bg-danger'
+                        : score === 2
+                          ? 'bg-warning'
+                          : score === 3
+                            ? 'bg-info'
+                            : 'bg-success'
+                      : 'bg-overlay'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-foreground-tertiary">
+              Fortaleza: {strengthLabels[score]} · Mínimo 8 caracteres, idealmente con mayúsculas,
+              números y símbolos.
+            </p>
+            {errors.password && <p className="text-xs text-danger-fg">{errors.password.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="role">Tipo de cuenta</Label>
+            <select
+              id="role"
+              className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+              {...register('role')}
+            >
+              <option value="investor">Inversionista</option>
+              <option value="issuer">Emisor (IFC)</option>
+            </select>
+          </div>
+
+          <label className="flex items-start gap-2.5 pt-1 text-sm text-foreground-secondary">
+            <Checkbox
+              checked={accept}
+              onCheckedChange={(v) => setAccept(Boolean(v))}
+              className="mt-0.5"
+            />
+            <span>
+              Acepto los{' '}
+              <Link href="#" className="text-brand-400 hover:text-brand-300">
+                Términos
+              </Link>{' '}
+              y la{' '}
+              <Link href="#" className="text-brand-400 hover:text-brand-300">
+                Política de privacidad
+              </Link>{' '}
+              en cumplimiento con CNBV y Ley Fintech.
+            </span>
+          </label>
+
+          <Button type="submit" className="w-full" loading={isSubmitting} disabled={!accept}>
+            Crear cuenta
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-foreground-secondary">
+          ¿Ya tienes cuenta?{' '}
+          <Link href="/login" className="font-medium text-brand-400 hover:text-brand-300">
+            Inicia sesión
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}

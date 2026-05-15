@@ -16,8 +16,23 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "type-check": {
+      "dependsOn": ["^build", "//#db:generate"],
+      "outputs": []
+    },
     "compile": {
       "outputs": ["artifacts/**", "cache/**", "typechain-types/**"]
+    },
+    "db:generate": {
+      "outputs": ["node_modules/.prisma/**", "node_modules/@prisma/client/**"],
+      "inputs": ["prisma/schema.prisma"]
+    },
+    "db:migrate:dev": {
+      "cache": false,
+      "persistent": false
+    },
+    "db:seed": {
+      "cache": false
     },
     "clean": {
       "cache": false

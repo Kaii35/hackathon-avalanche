@@ -1,0 +1,17 @@
+{
+  "name": "@hack/config",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "tsconfig",
+    "eslint-preset.cjs",
+    "prettier-preset.cjs"
+  ],
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/next.json": "./tsconfig/next.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./eslint": "./eslint-preset.cjs",
+    "./prettier": "./prettier-preset.cjs"
+  }
+}

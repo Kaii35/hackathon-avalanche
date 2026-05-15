@@ -1,0 +1,257 @@
+// Prisma schema for Mercado Secundario IFC sobre Avalanche.
+// All numeric financial fields use Decimal(38, 18) for token amounts and prices.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  investor
+  issuer
+  admin
+}
+
+enum KycStatus {
+  pending
+  verified
+  rejected
+}
+
+enum OfferingStatus {
+  draft
+  active
+  closed
+}
+
+enum OrderSide {
+  buy
+  sell
+}
+
+enum OrderStatus {
+  open
+  partial
+  filled
+  cancelled
+  expired
+}
+
+enum NotificationType {
+  kyc_verified
+  order_filled
+  order_cancelled
+  wallet_frozen
+  forced_transfer
+  offering_active
+}
+
+model User {
+  id             String         @id @default(uuid()) @db.Uuid
+  email          String         @unique
+  passwordHash   String         @map("password_hash")
+  role           Role           @default(investor)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  identities     Identity[]
+  wallets        Wallet[]
+  kycRecords     KycRecord[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model Identity {
+  id            String     @id @default(uuid()) @db.Uuid
+  userId        String     @map("user_id") @db.Uuid
+  wallet        String     @unique
+  kycStatus     KycStatus  @default(pending) @map("kyc_status")
+  jurisdiction  Int
+  accredited    Boolean    @default(false)
+  claimHash     String     @map("claim_hash")
+  verifiedAt    DateTime?  @map("verified_at")
+  frozen        Boolean    @default(false)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([kycStatus])
+  @@map("identities")
+}
+
+model Wallet {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  address    String   @unique
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  linkedAt   DateTime @default(now()) @map("linked_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("wallets")
+}
+
+model Issuer {
+  id                String     @id @default(uuid()) @db.Uuid
+  name              String
+  cnbvLicense       String     @map("cnbv_license")
+  kycIssuerAddress  String     @map("kyc_issuer_address")
+  logoUrl           String?    @map("logo_url")
+  createdAt         DateTime   @default(now()) @map("created_at")
+
+  offerings         Offering[]
+
+  @@map("issuers")
+}
+
+model Offering {
+  id                    String           @id @default(uuid()) @db.Uuid
+  issuerId              String           @map("issuer_id") @db.Uuid
+  tokenAddress          String?          @unique @map("token_address")
+  name                  String
+  symbol                String
+  prospectusIpfs        String           @map("prospectus_ipfs")
+  totalSupply           Decimal          @map("total_supply") @db.Decimal(38, 18)
+  pricePerUnit          Decimal          @map("price_per_unit") @db.Decimal(38, 18)
+  lockupUntil           DateTime         @map("lockup_until")
+  maxHolders            Int              @map("max_holders")
+  allowedJurisdictions  Int[]            @map("allowed_jurisdictions")
+  status                OfferingStatus   @default(draft)
+  sector                String
+  description           String           @db.Text
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  issuer                Issuer           @relation(fields: [issuerId], references: [id], onDelete: Restrict)
+  capTable              CapTableEntry[]
+  orders                Order[]
+  trades                Trade[]
+
+  @@index([issuerId])
+  @@index([status])
+  @@map("offerings")
+}
+
+model CapTableEntry {
+  id                  String   @id @default(uuid()) @db.Uuid
+  offeringId          String   @map("offering_id") @db.Uuid
+  wallet              String
+  balance             Decimal  @db.Decimal(38, 18)
+  percentOfTotal      Decimal  @default(0) @map("percent_of_total") @db.Decimal(10, 6)
+  lastUpdatedBlock    BigInt   @default(0) @map("last_updated_block")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  offering            Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, wallet])
+  @@index([wallet])
+  @@map("cap_table_entries")
+}
+
+model Order {
+  id           String       @id @default(uuid()) @db.Uuid
+  orderHash    String       @unique @map("order_hash")
+  makerWallet  String       @map("maker_wallet")
+  offeringId   String       @map("offering_id") @db.Uuid
+  side         OrderSide
+  qty          Decimal      @db.Decimal(38, 18)
+  price        Decimal      @db.Decimal(38, 18)
+  filledQty    Decimal      @default(0) @map("filled_qty") @db.Decimal(38, 18)
+  signature    String
+  expiresAt    DateTime     @map("expires_at")
+  status       OrderStatus  @default(open)
+  salt         String
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  offering     Offering     @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  buyTrades    Trade[]      @relation("BuyOrder")
+  sellTrades   Trade[]      @relation("SellOrder")
+
+  @@index([offeringId, status, side])
+  @@index([makerWallet])
+  @@index([expiresAt])
+  @@map("orders")
+}
+
+model Trade {
+  id           String   @id @default(uuid()) @db.Uuid
+  buyOrderId   String   @map("buy_order_id") @db.Uuid
+  sellOrderId  String   @map("sell_order_id") @db.Uuid
+  offeringId   String   @map("offering_id") @db.Uuid
+  qty          Decimal  @db.Decimal(38, 18)
+  price        Decimal  @db.Decimal(38, 18)
+  txHash       String   @unique @map("tx_hash")
+  blockNumber  BigInt   @default(0) @map("block_number")
+  settledAt    DateTime @default(now()) @map("settled_at")
+
+  buyOrder     Order    @relation("BuyOrder", fields: [buyOrderId], references: [id], onDelete: Restrict)
+  sellOrder    Order    @relation("SellOrder", fields: [sellOrderId], references: [id], onDelete: Restrict)
+  offering     Offering @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+
+  @@index([offeringId, settledAt])
+  @@map("trades")
+}
+
+model KycRecord {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  provider    String
+  payload     Json
+  status      KycStatus
+  externalId  String?    @map("external_id")
+  verifiedAt  DateTime?  @map("verified_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([userId])
+  @@map("kyc_records")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  action     String
+  actor      String
+  target     String?
+  payload    Json
+  txHash     String?  @map("tx_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([actor])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model ProcessedEvent {
+  eventId     String   @id @map("event_id")
+  eventType   String   @map("event_type")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_events")
+}

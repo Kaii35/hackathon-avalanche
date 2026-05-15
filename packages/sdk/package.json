@@ -9,9 +9,11 @@
   },
   "dependencies": {
     "viem": "^2.21.55",
+    "ioredis": "^5.4.2",
     "@hack/shared": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
   }
 }
