@@ -1,0 +1,27 @@
+# Compiler files
+cache/
+out/
+
+# Foundry libs — re-install with: forge install OpenZeppelin/openzeppelin-contracts foundry-rs/forge-std
+lib/
+
+# Local simulation manifest (only Fuji manifest is committed)
+deployments/31337.json
+deployments/latest.env
+
+# Commonly ignored directories
+.logs/
+.ignore/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Docs
+docs/
+
+# Dotenv file
+.env
+.env.*
+!.env.example

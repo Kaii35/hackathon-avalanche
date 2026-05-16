@@ -1,0 +1,12 @@
+{
+  "chainId": 43113,
+  "deployer": "0x66Cb45eE3646759179901567Fa81Fe2EBa639278",
+  "deployedAt": 1778908509,
+  "contracts": {
+    "IdentityRegistry": "0x8Ca947A8c9714548eCe376a879D6755048018A82",
+    "ComplianceManager": "0x8Db4A89761b208Da299dB9f1979252093A56C45A",
+    "TokenFactory": "0x500B3F119E09fA4503f7fE8D5724Ca7776257956",
+    "MockUSDC": "0x31E5aA694baebF0420170bD9b132F9b5c4b38A83",
+    "Settlement": "0x491BCC419E8Dd90d1783c234151c5B57A0Dc2A2A"
+  }
+}

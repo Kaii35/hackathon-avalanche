@@ -42,3 +42,6 @@ Thumbs.db
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# One-off installer scripts (Avalanche CLI etc.)
+install.sh
