@@ -10,11 +10,17 @@ interface Props {
   greeting?: string;
   /** Sub-line, e.g. "Preparando tu dashboard…" */
   subtitle?: string;
+  /** Bottom footnote next to the spinner. Defaults to chain status. */
+  footnote?: string;
+  /** Accessible label for the overlay (screen readers). */
+  ariaLabel?: string;
 }
 
 export function DashboardLoadingScreen({
   greeting = 'Bienvenido',
   subtitle = 'Preparando tu dashboard…',
+  footnote = 'Conectando con Avalanche Fuji…',
+  ariaLabel = 'Cargando dashboard',
 }: Props) {
   return (
     <motion.div
@@ -25,7 +31,7 @@ export function DashboardLoadingScreen({
       className="fixed inset-0 z-[100] flex items-center justify-center"
       role="status"
       aria-live="polite"
-      aria-label="Cargando dashboard"
+      aria-label={ariaLabel}
     >
       <ShaderAnimation />
 
@@ -68,7 +74,7 @@ export function DashboardLoadingScreen({
           className="mt-2 flex items-center gap-2 text-xs text-white/60"
         >
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          <span>Conectando con Avalanche Fuji…</span>
+          <span>{footnote}</span>
         </motion.div>
       </div>
     </motion.div>

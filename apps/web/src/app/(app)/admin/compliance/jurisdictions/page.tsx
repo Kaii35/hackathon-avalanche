@@ -1,5 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { Lock } from 'lucide-react';
 import {
   Badge,
   Card,
@@ -11,6 +14,21 @@ import {
   Switch,
 } from '@hack/ui';
 import type { ColumnDef } from '@tanstack/react-table';
+
+// cobe is WebGL → client only.
+const GlobeCdn = dynamic(() => import('@/components/ui/cobe-globe-cdn').then((m) => m.GlobeCdn), {
+  ssr: false,
+});
+
+const COUNTRY_COORDS: Record<number, { code: string; lat: number; lng: number }> = {
+  124: { code: 'CA', lat: 56.1, lng: -106.3 },
+  840: { code: 'US', lat: 39.8, lng: -98.6 },
+  484: { code: 'MX', lat: 23.6, lng: -102.5 },
+  76: { code: 'BR', lat: -14.2, lng: -51.9 },
+  152: { code: 'CL', lat: -35.7, lng: -71.5 },
+  32: { code: 'AR', lat: -38.4, lng: -63.6 },
+  724: { code: 'ES', lat: 40.5, lng: -3.7 },
+};
 
 interface Jurisdiction {
   iso: number;
@@ -73,14 +91,30 @@ const columns: ColumnDef<Jurisdiction>[] = [
   {
     header: 'Estado',
     accessorKey: 'allowed',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <Switch defaultChecked={row.original.allowed} />
-        <Badge variant={row.original.allowed ? 'success' : 'neutral'} size="sm">
-          {row.original.allowed ? 'Permitida' : 'Bloqueada'}
-        </Badge>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const blocked = !row.original.allowed;
+      return (
+        <div className="flex items-center gap-3">
+          <Switch
+            defaultChecked={row.original.allowed}
+            disabled={blocked}
+            aria-label={
+              blocked
+                ? `${row.original.name} bloqueada por ${row.original.policy}`
+                : `Alternar ${row.original.name}`
+            }
+          />
+          <Badge
+            variant={row.original.allowed ? 'success' : 'neutral'}
+            size="sm"
+            title={blocked ? row.original.policy : undefined}
+          >
+            {blocked && <Lock className="size-3" aria-hidden="true" />}
+            {row.original.allowed ? 'Permitida' : 'Bloqueada'}
+          </Badge>
+        </div>
+      );
+    },
   },
   {
     header: 'Inversionistas',
@@ -100,6 +134,27 @@ const columns: ColumnDef<Jurisdiction>[] = [
 
 export default function JurisdictionsPage() {
   const allowed = JURISDICTIONS.filter((j) => j.allowed);
+
+  // Map our jurisdictions to GlobeCdn marker shape. Only render allowed ones
+  // on the globe — blocked ones live in the chip list below the globe.
+  // GlobeCdn is hardcoded to a light/white sphere, so we wrap it on a white
+  // tile so it reads correctly even when the surrounding app is dark.
+  const globeMarkers = useMemo(
+    () =>
+      allowed
+        .map((j) => {
+          const coords = COUNTRY_COORDS[j.iso];
+          if (!coords) return null;
+          return {
+            id: `cdn-${coords.code.toLowerCase()}`,
+            location: [coords.lat, coords.lng] as [number, number],
+            region: coords.code,
+          };
+        })
+        .filter((m): m is NonNullable<typeof m> => m !== null),
+    [allowed],
+  );
+
   return (
     <>
       <PageHeader
@@ -107,15 +162,67 @@ export default function JurisdictionsPage() {
         description="Países permitidos a nivel global. Las ofertas pueden restringir adicionalmente."
       />
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 overflow-hidden">
           <CardHeader>
             <CardTitle className="text-sm">Cobertura mundial</CardTitle>
           </CardHeader>
           <CardContent>
-            <WorldMap activeIso={allowed.map((j) => j.iso)} />
-            <p className="mt-3 text-2xs text-foreground-tertiary">
-              {allowed.length} de {JURISDICTIONS.length} jurisdicciones habilitadas
-            </p>
+            {/* GlobeCdn is theme-aware:
+                · light → original CDN look (warm beige glow, soft sphere)
+                · dark  → cool brand-blue glow bridging white sphere to dark canvas
+                The brand wash behind only appears in dark mode (light surface
+                doesn't need the bridging). */}
+            <div className="relative">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-full opacity-0 blur-3xl dark:opacity-100"
+                style={{
+                  background:
+                    'radial-gradient(circle at 50% 50%, rgba(42,91,255,0.25), transparent 65%)',
+                }}
+              />
+              <GlobeCdn markers={globeMarkers} arcs={[]} className="relative" />
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3 text-2xs">
+              <p className="text-foreground-tertiary">
+                <span className="font-mono font-semibold text-foreground">
+                  {allowed.length}/{JURISDICTIONS.length}
+                </span>{' '}
+                jurisdicciones habilitadas
+              </p>
+              <div className="flex items-center gap-2.5 text-foreground-tertiary">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-1.5 rounded-full bg-foreground" />
+                  Activa
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block size-1 rounded-full bg-foreground-tertiary" />
+                  Bloqueada
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {JURISDICTIONS.map((j) => {
+                const coords = COUNTRY_COORDS[j.iso];
+                if (!coords) return null;
+                return (
+                  <span
+                    key={j.iso}
+                    title={j.allowed ? j.name : `${j.name} · bloqueada`}
+                    className={
+                      j.allowed
+                        ? 'inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand/10 px-1.5 py-0.5 font-mono text-2xs text-brand-400'
+                        : 'inline-flex items-center gap-1 rounded-md border border-border-subtle bg-elevated px-1.5 py-0.5 font-mono text-2xs text-foreground-tertiary'
+                    }
+                  >
+                    {!j.allowed && <Lock className="size-2.5" aria-hidden="true" />}
+                    {coords.code}
+                  </span>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
         <div className="lg:col-span-2">
@@ -123,55 +230,5 @@ export default function JurisdictionsPage() {
         </div>
       </div>
     </>
-  );
-}
-
-function WorldMap({ activeIso }: { activeIso: number[] }) {
-  const dots = [
-    { iso: 484, x: 22, y: 42, label: 'MX' },
-    { iso: 840, x: 28, y: 32, label: 'US' },
-    { iso: 124, x: 30, y: 22, label: 'CA' },
-    { iso: 724, x: 50, y: 30, label: 'ES' },
-    { iso: 32, x: 32, y: 76, label: 'AR' },
-    { iso: 152, x: 30, y: 70, label: 'CL' },
-    { iso: 76, x: 38, y: 64, label: 'BR' },
-  ];
-  return (
-    <svg viewBox="0 0 100 80" className="aspect-[5/4] w-full" aria-label="Mapa mundial">
-      <rect width="100" height="80" fill="hsl(222 18% 10%)" />
-      <rect width="100" height="80" fill="url(#grid)" opacity="0.5" />
-      <defs>
-        <pattern id="grid" width="6" height="6" patternUnits="userSpaceOnUse">
-          <path d="M 6 0 L 0 0 0 6" fill="none" stroke="hsl(222 14% 18%)" strokeWidth="0.2" />
-        </pattern>
-      </defs>
-      {dots.map((d) => (
-        <g key={d.iso}>
-          <circle
-            cx={d.x}
-            cy={d.y}
-            r="2"
-            fill={activeIso.includes(d.iso) ? '#2A5BFF' : '#52525b'}
-            stroke="white"
-            strokeOpacity="0.1"
-          />
-          {activeIso.includes(d.iso) && (
-            <circle cx={d.x} cy={d.y} r="3.5" fill="none" stroke="#2A5BFF" strokeOpacity="0.4">
-              <animate attributeName="r" from="2" to="6" dur="2s" repeatCount="indefinite" />
-              <animate
-                attributeName="stroke-opacity"
-                from="0.5"
-                to="0"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-            </circle>
-          )}
-          <text x={d.x + 3} y={d.y + 1.4} fontSize="2.4" fill="#a1a1aa">
-            {d.label}
-          </text>
-        </g>
-      ))}
-    </svg>
   );
 }

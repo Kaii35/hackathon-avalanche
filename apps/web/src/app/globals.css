@@ -176,3 +176,84 @@
     scrollbar-width: none;
   }
 }
+
+/* ============================================
+   RainbowKit modal · Arkangeles brand polish
+   These overrides go beyond what the Theme API
+   exposes (group labels, hover micro-interactions,
+   internal radial brand mesh).
+   ============================================ */
+[data-rk] {
+  font-family: var(--font-sans), 'Inter', system-ui, sans-serif;
+}
+
+/* Modal title (e.g. "Conectar una billetera") */
+[data-rk] h1 {
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+/* Group labels (Avalanche / Más opciones) */
+[data-rk] h2 {
+  text-transform: uppercase;
+  font-size: 0.6875rem !important;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+/* Wallet option buttons — subtle slide-in on hover */
+[data-rk] button {
+  transition:
+    transform 180ms cubic-bezier(0.21, 1.02, 0.73, 1),
+    background-color 200ms ease,
+    box-shadow 220ms ease,
+    border-color 200ms ease !important;
+}
+[data-rk] button:hover {
+  transform: translateY(-1px);
+}
+[data-rk] button:active {
+  transform: translateY(0);
+}
+
+/* Tabular numerals inside the modal (addresses, balances) */
+[data-rk] [class*='ReactModal'],
+[data-rk] dialog,
+[data-rk] [role='dialog'] {
+  font-feature-settings:
+    'cv11',
+    'ss01',
+    'tnum' on,
+    'lnum' on;
+}
+
+/* Internal brand mesh — places a soft Arkangeles + violet radial
+   behind the modal content, mirroring the body bg gradient.
+   Pseudo lives at the modal root; pointer-events disabled. */
+[data-rk] [role='dialog'] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+[data-rk] [role='dialog']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(at 0% 0%, rgba(42, 91, 255, 0.12), transparent 55%),
+    radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08), transparent 60%);
+  opacity: 0.85;
+}
+html:not(.dark) [data-rk] [role='dialog']::before {
+  background:
+    radial-gradient(at 0% 0%, rgba(42, 91, 255, 0.07), transparent 55%),
+    radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.05), transparent 60%);
+}
+/* Ensure modal children render on top of the ::before mesh */
+[data-rk] [role='dialog'] > * {
+  position: relative;
+  z-index: 1;
+}

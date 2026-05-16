@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,7 +18,6 @@ import {
   History,
   ChevronLeft,
   Building2,
-  PieChart,
 } from 'lucide-react';
 import { cn } from '@hack/ui';
 import { Button } from '@hack/ui';
@@ -75,12 +75,6 @@ const adminNav: NavSection[] = [
   },
 ];
 
-const crossLinks: NavItem[] = [
-  { label: 'Investor portal', href: '/investor', icon: PieChart },
-  { label: 'Issuer portal', href: '/issuer', icon: Building2 },
-  { label: 'Admin portal', href: '/admin', icon: Shield },
-];
-
 function navForPath(path: string): NavSection[] {
   if (path.startsWith('/issuer')) return issuerNav;
   if (path.startsWith('/admin')) return adminNav;
@@ -93,12 +87,41 @@ function homeForPath(path: string): string {
   return '/investor';
 }
 
+/**
+ * Picks the single active href via longest-prefix-wins so nested routes
+ * don't also light up their parent (e.g. /investor/portfolio must not
+ * activate /investor).
+ */
+function resolveActiveHref(path: string, sections: NavSection[]): string | null {
+  let best: { href: string; len: number } | null = null;
+  for (const section of sections) {
+    for (const item of section.items) {
+      const matches = path === item.href || path.startsWith(item.href + '/');
+      if (matches && (!best || item.href.length > best.len)) {
+        best = { href: item.href, len: item.href.length };
+      }
+    }
+  }
+  return best?.href ?? null;
+}
+
 export function Sidebar() {
   const path = usePathname() ?? '/';
   const sections = navForPath(path);
   const home = homeForPath(path);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggle = useUiStore((s) => s.toggleSidebar);
+
+  // Optimistic highlight: jumps the moment the user clicks, even before
+  // the new route finishes compiling/loading. Cleared when the real path
+  // catches up.
+  const [optimisticHref, setOptimisticHref] = useState<string | null>(null);
+  useEffect(() => {
+    setOptimisticHref(null);
+  }, [path]);
+
+  const realActive = useMemo(() => resolveActiveHref(path, sections), [path, sections]);
+  const activeHref = optimisticHref ?? realActive;
 
   return (
     <aside
@@ -136,12 +159,12 @@ export function Sidebar() {
             )}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
-                const active =
-                  path === item.href || (item.href !== '/' && path.startsWith(item.href));
+                const active = activeHref === item.href;
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={() => setOptimisticHref(item.href)}
                       className={cn(
                         'group relative flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors',
                         active
@@ -162,27 +185,6 @@ export function Sidebar() {
             </ul>
           </div>
         ))}
-
-        {!collapsed && (
-          <div className="mt-2 border-t border-border-subtle pt-4">
-            <p className="mb-1 px-2 text-2xs font-medium uppercase tracking-wider text-foreground-tertiary">
-              Saltar a
-            </p>
-            <ul className="space-y-0.5">
-              {crossLinks.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm text-foreground-secondary transition-colors hover:bg-elevated hover:text-foreground"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </nav>
 
       <div className="border-t border-border-subtle p-3">
