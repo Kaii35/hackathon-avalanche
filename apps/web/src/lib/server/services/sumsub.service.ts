@@ -16,7 +16,10 @@ import { logger } from '../logger';
  * Docs: https://docs.sumsub.com/reference/about-sumsub-api
  */
 
-const BASE_URL = process.env.SUMSUB_BASE_URL ?? 'https://api.sumsub.com';
+// Trim trailing slashes — Jetty (Sumsub's web server) rejects URLs with
+// '//' as "Ambiguous URI empty segment", which happens when env has a
+// trailing slash and paths start with '/'.
+const BASE_URL = (process.env.SUMSUB_BASE_URL ?? 'https://api.sumsub.com').replace(/\/+$/, '');
 const APP_TOKEN = process.env.SUMSUB_APP_TOKEN ?? '';
 const SECRET = process.env.SUMSUB_SECRET_KEY ?? '';
 const LEVEL_NAME = process.env.SUMSUB_LEVEL_NAME ?? 'basic-kyc-level';

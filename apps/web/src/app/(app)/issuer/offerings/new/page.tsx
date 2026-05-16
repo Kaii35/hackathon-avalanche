@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import {
@@ -390,57 +390,121 @@ function DocumentsStep() {
   const { watch, setValue } = useFormContext<FormShape>();
   const prospectus = watch('prospectus');
   const termsheet = watch('termsheet');
+  const [filenames, setFilenames] = useState<Record<'prospectus' | 'termsheet', string | null>>({
+    prospectus: null,
+    termsheet: null,
+  });
+
   return (
     <>
       <CardHeader>
         <CardTitle>Documentos</CardTitle>
         <CardDescription>
-          Sube los documentos relevantes; se anclan a IPFS y su hash queda on-chain.
+          Selecciona los documentos relevantes; se anclan a IPFS y su hash queda on-chain.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {[
-          {
-            key: 'prospectus' as const,
-            label: 'Prospecto',
-            desc: 'PDF — requerido por CNBV',
-            value: prospectus,
-          },
-          {
-            key: 'termsheet' as const,
-            label: 'Term sheet',
-            desc: 'Resumen económico breve',
-            value: termsheet,
-          },
-        ].map((d) => (
-          <div
+        {(
+          [
+            {
+              key: 'prospectus',
+              label: 'Prospecto',
+              desc: 'PDF — requerido por CNBV',
+              value: prospectus,
+            },
+            {
+              key: 'termsheet',
+              label: 'Term sheet',
+              desc: 'Resumen económico breve',
+              value: termsheet,
+            },
+          ] as const
+        ).map((d) => (
+          <DocumentRow
             key={d.key}
-            className="rounded-lg border border-dashed border-border bg-elevated/40 p-5"
-          >
-            <div className="flex items-center gap-4">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-elevated">
-                <FileUp className="h-5 w-5 text-foreground-secondary" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{d.label}</p>
-                <p className="text-xs text-foreground-tertiary">{d.desc}</p>
-              </div>
-              {d.value ? (
-                <Badge variant="success">Subido a IPFS</Badge>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setValue(d.key, true, { shouldDirty: true })}
-                >
-                  Subir
-                </Button>
-              )}
-            </div>
-          </div>
+            field={d.key}
+            label={d.label}
+            description={d.desc}
+            uploaded={d.value}
+            filename={filenames[d.key]}
+            onFileSelected={(name) => {
+              setFilenames((prev) => ({ ...prev, [d.key]: name }));
+              setValue(d.key, true, { shouldDirty: true });
+            }}
+            onRemove={() => {
+              setFilenames((prev) => ({ ...prev, [d.key]: null }));
+              setValue(d.key, false, { shouldDirty: true });
+            }}
+          />
         ))}
       </CardContent>
     </>
+  );
+}
+
+function DocumentRow({
+  field,
+  label,
+  description,
+  uploaded,
+  filename,
+  onFileSelected,
+  onRemove,
+}: {
+  field: 'prospectus' | 'termsheet';
+  label: string;
+  description: string;
+  uploaded: boolean;
+  filename: string | null;
+  onFileSelected: (name: string) => void;
+  onRemove: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-elevated/40 p-5">
+      <div className="flex items-center gap-4">
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-elevated">
+          <FileUp className="h-5 w-5 text-foreground-secondary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="truncate text-xs text-foreground-tertiary">
+            {filename ? filename : description}
+          </p>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          aria-label={`Adjuntar ${label}`}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onFileSelected(file.name);
+            // Allow re-selecting the same file later
+            e.target.value = '';
+          }}
+        />
+        {uploaded ? (
+          <div className="flex items-center gap-2">
+            <Badge variant="success">Subido a IPFS</Badge>
+            <Button variant="ghost" size="sm" onClick={onRemove}>
+              Quitar
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            data-field={field}
+          >
+            Adjuntar PDF
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 

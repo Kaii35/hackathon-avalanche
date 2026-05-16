@@ -9,6 +9,13 @@ import { logger } from './logger.js';
 import { createRedis } from './redis.js';
 import { dispatch } from './handlers/index.js';
 import { startHealthServer } from './health.js';
+import { startFujiWatcher, type FujiWatcherHandle } from './fuji/watcher.js';
+
+// INDEXER_MODE:
+//   - 'mock'    (default): only consume Redis Streams from the mock chain
+//   - 'fuji'    : only watch Avalanche Fuji events directly via viem
+//   - 'both'    : run both (useful while migrating off the mock chain)
+const INDEXER_MODE = (process.env.INDEXER_MODE ?? 'mock').toLowerCase();
 
 const CONSUMER_GROUP = 'indexer';
 const CONSUMER_NAME = `indexer-${process.pid}`;
@@ -102,25 +109,40 @@ async function consume(redis: Redis, signal: AbortSignal): Promise<void> {
 }
 
 async function main() {
-  logger.info('indexer arrancando...');
-  const redis = createRedis();
-  await ensureGroup(redis);
+  logger.info({ mode: INDEXER_MODE }, 'indexer arrancando...');
   const port = Number(process.env.INDEXER_PORT ?? 3001);
   const health = startHealthServer(port, logger);
 
   const ctrl = new AbortController();
+  let fuji: FujiWatcherHandle | null = null;
+  let redis: ReturnType<typeof createRedis> | null = null;
+
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'shutdown initiated');
     ctrl.abort();
+    fuji?.stop();
     health.close();
     await prisma.$disconnect();
-    await redis.quit();
+    if (redis) await redis.quit();
     process.exit(0);
   };
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
-  await consume(redis, ctrl.signal);
+  // Fuji live tail
+  if (INDEXER_MODE === 'fuji' || INDEXER_MODE === 'both') {
+    fuji = await startFujiWatcher({ prisma, logger });
+  }
+
+  // Mock chain consumer (Redis Streams)
+  if (INDEXER_MODE === 'mock' || INDEXER_MODE === 'both') {
+    redis = createRedis();
+    await ensureGroup(redis);
+    await consume(redis, ctrl.signal);
+  } else {
+    // Fuji-only mode: keep the process alive while the watcher polls.
+    await new Promise((resolve) => ctrl.signal.addEventListener('abort', () => resolve(null)));
+  }
 }
 
 main().catch((err) => {

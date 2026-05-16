@@ -3,9 +3,11 @@
 import { useAccount, useBalance } from 'wagmi';
 import { avalancheFuji } from 'wagmi/chains';
 
-// Circle-issued USDC on Avalanche Fuji testnet.
-// https://developers.circle.com/stablecoins/usdc-on-test-networks
-const USDC_FUJI = '0x5425890298aed601595a70AB815c96711a31Bc65' as const;
+// USDC token used by the platform. Prefer NEXT_PUBLIC_USDC (our MockUSDC
+// deployed for the demo) and fall back to Circle's official USDC on Fuji
+// only if the env var is missing.
+const USDC_FUJI = (process.env.NEXT_PUBLIC_USDC ??
+  '0x5425890298aed601595a70AB815c96711a31Bc65') as `0x${string}`;
 
 export interface WalletBalances {
   isConnected: boolean;

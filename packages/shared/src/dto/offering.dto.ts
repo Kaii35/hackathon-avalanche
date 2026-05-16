@@ -85,6 +85,14 @@ export interface OfferingResponseDto {
   allowedJurisdictions: number[];
   status: 'draft' | 'active' | 'closed';
   createdAt: string;
+  /** Holders únicos con balance > 0 — derivado de capTableEntry (indexer). */
+  holders?: number;
+  /** Precio del trade más reciente (USDC/share). Si no hay trades, usa pricePerUnit. */
+  lastTradePrice?: number;
+  /** Suma de paymentAmount de trades en las últimas 24h (USDC). */
+  volume24h?: number;
+  /** % financiado vs totalSupply — heurística simple para el dashboard. */
+  fundedPct?: number;
 }
 
 export interface CapTableRowDto {

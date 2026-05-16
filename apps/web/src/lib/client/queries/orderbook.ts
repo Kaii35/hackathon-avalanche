@@ -3,7 +3,10 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAccount, useSignTypedData } from 'wagmi';
 import { parseUnits, type Address } from 'viem';
-import { ORDER_TYPE, getDomain } from '@hack/sdk';
+// Relative import: the '@hack/sdk' barrel pulls in the mock chain (uses
+// node:crypto) which webpack can't resolve in the client bundle. The
+// eip712.ts module is pure types + constants — safe for browsers.
+import { ORDER_TYPE, getDomain } from '../../../../../../packages/sdk/src/eip712';
 import { apiOrMock, api } from '../api';
 import { queryKeys } from './keys';
 import { makeOrderbook, getMockOpenOrders, getMockFilledOrders } from '../mocks/orders';
