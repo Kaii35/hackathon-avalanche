@@ -133,6 +133,34 @@ async function main() {
   }
 
   // eslint-disable-next-line no-console
+  console.log('Creando offering ARKDEMO (token real en Fuji)...');
+  // ID estable para que el frontend lo enlace directamente.
+  // Token verified en Avalanche Fuji: 0x1C18933bDcFEDc048795cBd0aaEDD3D0e42F0C26
+  const ARKDEMO_ID = '00000000-0000-4000-8000-000000000001';
+  const arkDemoOffering = await prisma.offering.create({
+    data: {
+      id: ARKDEMO_ID,
+      issuerId: issuer.id,
+      tokenAddress: '0x1C18933bDcFEDc048795cBd0aaEDD3D0e42F0C26',
+      name: 'Arkangeles Demo Offering',
+      symbol: 'ARKDEMO',
+      sector: 'Venture Capital',
+      description:
+        'Participaciones tokenizadas de Arkangeles IFC sobre Avalanche Fuji. ' +
+        'Token desplegado y verificado en Snowtrace. Solo para demo del hackathon.',
+      prospectusIpfs: 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      totalSupply: dec('100000'),
+      pricePerUnit: dec('5.00'),
+      lockupUntil: new Date('2025-01-01T00:00:00Z'), // lockup ya expirado para demo
+      maxHolders: 500,
+      allowedJurisdictions: [JURISDICTION_MX],
+      status: 'active',
+    },
+  });
+  // eslint-disable-next-line no-console
+  console.log(`  ARKDEMO id: ${arkDemoOffering.id} | token: ${arkDemoOffering.tokenAddress}`);
+
+  // eslint-disable-next-line no-console
   console.log('Creando ofertas...');
   const offeringSeeds = [
     {
