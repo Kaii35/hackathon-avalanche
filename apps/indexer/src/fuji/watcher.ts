@@ -148,33 +148,43 @@ function mapForcedTransfer(
   } as ChainEvent;
 }
 
-function mapIdentityVerified(log: LogWithArgs<{ user: Address; verifier: Address }>): ChainEvent {
-  // Map AddressVerified → IdentityRegistered (jurisdiction/accredited are
-  // tracked off-chain in Sumsub; we keep zero defaults on-chain to stay
-  // compatible with the existing handler).
-  return {
-    id: eventId(log),
-    type: 'IdentityRegistered',
-    txHash: log.transactionHash,
-    blockNumber: log.blockNumber,
-    timestamp: Math.floor(Date.now() / 1000),
-    wallet: log.args.user.toLowerCase() as Address,
-    jurisdiction: 484, // MX default; off-chain reconcile overrides this if needed
-    accredited: false,
-    claimHash:
-      '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-  } as ChainEvent;
-}
-
-function mapIdentityRevoked(log: LogWithArgs<{ user: Address; verifier: Address }>): ChainEvent {
-  return {
-    id: eventId(log),
-    type: 'IdentityRemoved',
-    txHash: log.transactionHash,
-    blockNumber: log.blockNumber,
-    timestamp: Math.floor(Date.now() / 1000),
-    wallet: log.args.user.toLowerCase() as Address,
-  } as ChainEvent;
+// NOTE on identity events:
+// The on-chain IdentityRegistry only emits AddressVerified(user, verifier).
+// It does NOT carry jurisdiction or accredited status — those live in Sumsub
+// (off-chain source of truth). If we naively mapped to the existing
+// IdentityRegistered handler, we'd overwrite Sumsub-mirrored fields with
+// fake defaults like jurisdiction=484 and corrupt the regulator-facing
+// admin panel.
+//
+// Instead, we write directly to audit_log here (idempotent via the outer
+// ProcessedEvent dedupe) and SKIP dispatch. The Sumsub webhook +
+// /api/admin/investors reconcile own jurisdiction/accredited.
+async function recordIdentityChainEvent(
+  log: LogWithArgs<{ user: Address; verifier: Address }>,
+  action: 'identity.verified.observed' | 'identity.revoked.observed',
+  ctx: ChainCtx,
+): Promise<void> {
+  const already = await ctx.prisma.processedEvent.findUnique({ where: { eventId: eventId(log) } });
+  if (already) return;
+  try {
+    await ctx.prisma.auditLog.create({
+      data: {
+        action,
+        actor: 'indexer:fuji',
+        target: log.args.user.toLowerCase(),
+        payload: {
+          verifier: log.args.verifier.toLowerCase(),
+          blockNumber: log.blockNumber.toString(),
+        },
+        txHash: log.transactionHash,
+      },
+    });
+    await ctx.prisma.processedEvent.create({
+      data: { eventId: eventId(log), eventType: action },
+    });
+  } catch (err) {
+    ctx.logger.warn({ err, target: log.args.user }, 'fuji identity audit_log write failed');
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -317,9 +327,9 @@ export async function startFujiWatcher(ctx: ChainCtx): Promise<FujiWatcherHandle
     async (log) => {
       const l = log as LogWithArgs<{ user: Address; verifier: Address }>;
       if (l.eventName === 'AddressVerified') {
-        await persistAndDispatch(mapIdentityVerified(l), ctx);
+        await recordIdentityChainEvent(l, 'identity.verified.observed', ctx);
       } else if (l.eventName === 'AddressRevoked') {
-        await persistAndDispatch(mapIdentityRevoked(l), ctx);
+        await recordIdentityChainEvent(l, 'identity.revoked.observed', ctx);
       }
     },
     ctx.logger,
@@ -459,9 +469,9 @@ export async function startFujiWatcher(ctx: ChainCtx): Promise<FujiWatcherHandle
       for (const log of logs) {
         const l = log as unknown as LogWithArgs<{ user: Address; verifier: Address }>;
         if (l.eventName === 'AddressVerified') {
-          await persistAndDispatch(mapIdentityVerified(l), ctx);
+          await recordIdentityChainEvent(l, 'identity.verified.observed', ctx);
         } else if (l.eventName === 'AddressRevoked') {
-          await persistAndDispatch(mapIdentityRevoked(l), ctx);
+          await recordIdentityChainEvent(l, 'identity.revoked.observed', ctx);
         }
       }
     },

@@ -8,6 +8,13 @@
 
 import { prisma } from '@hack/database';
 
+// Hardcoded demo addresses mutate users by email. If executed against a
+// production DATABASE_URL it would silently overwrite real KYC wallets.
+if (process.env.NODE_ENV === 'production') {
+  console.error('[demo-script] Refusing to run with NODE_ENV=production.');
+  process.exit(1);
+}
+
 // Lowercase porque el Zod addressSchema en packages/shared transforma a
 // lowercase antes de comparar en Prisma. Match exact requiere mismo casing.
 const LINKS = [

@@ -1,11 +1,19 @@
 // Sincroniza cap_table_entries con los balances on-chain de ARKDEMO en Fuji.
-// Patch temporal hasta que el indexer escuche los Transfer events reales.
+// Patch temporal hasta que el indexer escuche los Transfer events reales
+// (ahora ya lo hace — ver apps/indexer/src/fuji/watcher.ts). Mantenido como
+// emergency-rebuild si la DB pierde estado y el indexer no puede backfillear.
 //
 // Run: pnpm exec dotenv -e .env -- pnpm exec tsx scripts/sync-captable-from-chain.ts
 
 import { createPublicClient, http, type Address } from 'viem';
 import { avalancheFuji } from 'viem/chains';
 import { prisma, Prisma } from '@hack/database';
+
+// Hardcoded demo wallets; refuse to run against a production DATABASE_URL.
+if (process.env.NODE_ENV === 'production') {
+  console.error('[demo-script] Refusing to run with NODE_ENV=production.');
+  process.exit(1);
+}
 
 const RPC = process.env.AVALANCHE_RPC_URL ?? 'https://api.avax-test.network/ext/bc/C/rpc';
 const ARKDEMO_TOKEN = '0x1C18933bDcFEDc048795cBd0aaEDD3D0e42F0C26' as Address;
