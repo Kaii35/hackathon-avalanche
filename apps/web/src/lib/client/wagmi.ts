@@ -15,7 +15,7 @@ import {
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 
-const APP_NAME = 'Mercado Secundario IFC';
+const APP_NAME = 'Arca';
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? 'https://api.avax-test.network/ext/bc/C/rpc';
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 

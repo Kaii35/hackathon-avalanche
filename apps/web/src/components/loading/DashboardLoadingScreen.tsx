@@ -1,9 +1,16 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { ShaderAnimation } from '@/components/ui/shader-animation';
 import { LogoMark } from '@/components/brand/Logo';
+
+// The shader is decorative — defer its Three.js bundle so the splash text
+// (greeting + spinner) shows immediately, with the shader fading in over it.
+const ShaderAnimation = dynamic(
+  () => import('@/components/ui/shader-animation').then((m) => m.ShaderAnimation),
+  { ssr: false, loading: () => null },
+);
 
 interface Props {
   /** Greeting line, e.g. "Bienvenido, Miguel" */
@@ -52,7 +59,7 @@ export function DashboardLoadingScreen({
           className="flex items-center gap-2.5"
         >
           <LogoMark size={36} glow />
-          <span className="text-lg font-semibold tracking-tight text-white">Mercado IFC</span>
+          <span className="text-lg font-semibold uppercase tracking-[0.18em] text-white">ARCA</span>
         </motion.div>
 
         <motion.div

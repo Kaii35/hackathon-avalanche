@@ -108,7 +108,7 @@ const light: Theme = {
 };
 
 const appInfo = {
-  appName: 'Mercado Secundario IFC',
+  appName: 'Arca',
   learnMoreUrl: 'https://www.avax.network/',
   disclaimer: ({
     Text,

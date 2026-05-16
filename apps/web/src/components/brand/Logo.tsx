@@ -60,7 +60,10 @@ interface LogoProps extends MarkProps {
 }
 
 /**
- * Brand lockup: mark + wordmark "Mercado IFC". Drop into nav/footer/loading.
+ * Brand lockup: mark + wordmark "ARCA". Drop into nav/footer/loading.
+ * Wordmark uses ALL CAPS + wider tracking — a 4-letter brand earns the
+ * impact of a full all-caps treatment without dragging on (e.g. "ARCA"
+ * vs the longer "Arca" in body copy elsewhere).
  */
 export function Logo({
   size = 24,
@@ -73,8 +76,13 @@ export function Logo({
     <span className={cn('inline-flex items-center gap-2', className)}>
       <LogoMark size={size} glow={glow} />
       {withWordmark && (
-        <span className={cn('font-semibold tracking-tight text-foreground', wordmarkClassName)}>
-          Mercado IFC
+        <span
+          className={cn(
+            'font-semibold uppercase tracking-[0.18em] text-foreground',
+            wordmarkClassName,
+          )}
+        >
+          ARCA
         </span>
       )}
     </span>

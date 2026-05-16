@@ -1,8 +1,8 @@
-# Arquitectura — Mercado Secundario IFC sobre Avalanche
+# Arquitectura — Arca · Mercado Secundario Regulado sobre Avalanche
 
 ## 1. Visión
 
-Plataforma white-label que cualquier IFC (empezando con Arkangeles) puede usar para emitir participaciones tokenizadas, mantener cap table on-chain y operar un mercado secundario regulado entre inversionistas calificados. La diferencia frente a un DEX genérico: el cumplimiento CNBV está embebido a nivel de smart contract.
+**Arca** es la plataforma white-label que cualquier IFC (empezando con Arkangeles) puede usar para emitir participaciones tokenizadas, mantener cap table on-chain y operar un mercado secundario regulado entre inversionistas calificados. La diferencia frente a un DEX genérico: el cumplimiento CNBV está embebido a nivel de smart contract.
 
 ## 2. Vista de alto nivel
 

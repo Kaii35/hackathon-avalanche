@@ -16,12 +16,12 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s · Mercado Secundario IFC',
-    default: 'Mercado Secundario IFC · Avalanche',
+    template: '%s · Arca',
+    default: 'Arca · Mercado Secundario Regulado',
   },
   description:
-    'Mercado secundario regulado de participaciones IFC sobre Avalanche con compliance CNBV embebido en smart contracts.',
-  keywords: ['IFC', 'tokenización', 'CNBV', 'Avalanche', 'mercado secundario', 'ERC-3643'],
+    'Arca — mercado secundario regulado de participaciones IFC sobre Avalanche, con compliance CNBV embebido en smart contracts.',
+  keywords: ['Arca', 'IFC', 'tokenización', 'CNBV', 'Avalanche', 'mercado secundario', 'ERC-3643'],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

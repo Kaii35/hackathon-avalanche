@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import {
@@ -15,6 +16,7 @@ import {
   Switch,
 } from '@hack/ui';
 import { useOnboardingStore } from '@/lib/client/stores/onboardingStore';
+import { useSession } from '@/lib/client/queries/session';
 import { ChevronRight } from 'lucide-react';
 
 interface FormShape {
@@ -27,7 +29,15 @@ interface FormShape {
 
 export default function OnboardingStartPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { fullName, rfc, curp, dateOfBirth, accredited, patch } = useOnboardingStore();
+
+  // Admins have a dedicated standalone setup screen (no investor stepper).
+  useEffect(() => {
+    if (session?.role === 'admin') {
+      router.replace('/admin-setup');
+    }
+  }, [session?.role, router]);
 
   const { register, handleSubmit, watch, setValue } = useForm<FormShape>({
     defaultValues: { fullName, rfc, curp, dateOfBirth, accredited },

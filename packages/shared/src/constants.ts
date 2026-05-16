@@ -32,9 +32,9 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 export const ETH_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 export const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 
-export const SIWE_DOMAIN = 'mercado-ifc.local';
+export const SIWE_DOMAIN = 'arca.local';
 export const SIWE_STATEMENT =
-  'Vincula esta wallet con tu cuenta del Mercado Secundario IFC. Esta firma no autoriza ninguna transferencia.';
+  'Vincula esta wallet con tu cuenta de Arca. Esta firma no autoriza ninguna transferencia.';
 
 export const RATE_LIMITS = {
   login: { points: 5, durationSec: 60 },

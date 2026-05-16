@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@hack/ui';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ArrowRight, Wallet } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useSession } from '@/lib/client/queries/session';
 import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
 import { Logo } from '@/components/brand/Logo';
@@ -22,7 +21,7 @@ export function MarketingNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border-subtle bg-canvas/70 backdrop-blur-md">
       <div className="container flex h-14 items-center justify-between">
-        <Link href="/" aria-label="Mercado IFC — inicio">
+        <Link href="/" aria-label="Arca — inicio">
           <Logo size={26} />
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-foreground-secondary md:flex">
@@ -41,44 +40,6 @@ export function MarketingNav() {
         </nav>
         <div className="flex items-center gap-2">
           <AnimatedThemeToggler />
-          <ConnectButton.Custom>
-            {({ openConnectModal, openAccountModal, openChainModal, account, chain, mounted }) => {
-              const ready = mounted;
-              const connected = ready && account && chain;
-              if (!connected) {
-                return (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={openConnectModal}
-                    disabled={!ready}
-                  >
-                    <Wallet className="h-4 w-4" />
-                    <span className="hidden sm:inline">Conectar wallet</span>
-                  </Button>
-                );
-              }
-              if (chain.unsupported) {
-                return (
-                  <Button type="button" size="sm" variant="destructive" onClick={openChainModal}>
-                    Red incorrecta
-                  </Button>
-                );
-              }
-              return (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={openAccountModal}
-                  className="font-mono text-xs"
-                >
-                  {account.displayName}
-                </Button>
-              );
-            }}
-          </ConnectButton.Custom>
 
           {isLogged && session ? (
             <Button size="sm" asChild>

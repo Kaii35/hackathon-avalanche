@@ -1,16 +1,18 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiOrMock } from '../api';
+import { api, apiOrMock } from '../api';
 import { queryKeys } from './keys';
 import { MOCK_CAP_TABLE, MOCK_OFFERINGS, type MockOffering } from '../mocks/offerings';
-import type { CapTableRowDto } from '@hack/shared';
+import type { CapTableRowDto, OfferingResponseDto, UpdateOfferingDto } from '@hack/shared';
 
 export interface OfferingsFilters {
   status?: 'draft' | 'active' | 'closed';
   sector?: string;
   jurisdiction?: number;
   search?: string;
+  /** "Mis ofertas": API resolves the authenticated user's Issuer server-side. */
+  mine?: boolean;
 }
 
 // The real API returns OfferingResponseDto which is a subset of MockOffering.
@@ -36,8 +38,13 @@ export function useOfferings(filters?: OfferingsFilters) {
     queryFn: async () => {
       // Real API returns { items, total, page, pageSize }; mock returns MockOffering[].
       // Unwrap so all consumers can treat the result as a flat array.
+      const qs = new URLSearchParams();
+      if (filters?.mine) qs.set('mine', 'true');
+      if (filters?.status) qs.set('status', filters.status);
+      if (filters?.search) qs.set('search', filters.search);
+      const suffix = qs.toString() ? `?${qs.toString()}` : '';
       const raw = await apiOrMock<MockOffering[] | { items: MockOffering[] }>(
-        `/api/offerings`,
+        `/api/offerings${suffix}`,
         () => {
           let result = MOCK_OFFERINGS;
           if (filters?.status) result = result.filter((o) => o.status === filters.status);
@@ -77,22 +84,30 @@ export function useOffering(id: string | undefined) {
   });
 }
 
+type CapTableResponse = CapTableRowDto[] | { offeringId: string; rows: CapTableRowDto[] };
+
 export function useCapTable(offeringId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.offerings.capTable(offeringId ?? ''),
-    queryFn: () =>
-      apiOrMock<CapTableRowDto[]>(`/api/offerings/${offeringId}/cap-table`, () => {
-        return (
-          MOCK_CAP_TABLE[offeringId ?? ''] ??
-          // Fallback synthetic distribution
-          Array.from({ length: 10 }).map((_, i) => ({
-            wallet: `0x${(i + 100).toString(16).padStart(40, '0')}` as `0x${string}`,
-            balance: ((10 - i) * 250000).toString(),
-            percentOfTotal: (10 - i) * 1.2,
-            lastUpdatedBlock: (1284500 - i * 7).toString(),
-          }))
-        );
-      }),
+    queryFn: async (): Promise<CapTableRowDto[]> => {
+      const res = await apiOrMock<CapTableResponse>(
+        `/api/offerings/${offeringId}/cap-table`,
+        () => {
+          return (
+            MOCK_CAP_TABLE[offeringId ?? ''] ??
+            // Fallback synthetic distribution
+            Array.from({ length: 10 }).map((_, i) => ({
+              wallet: `0x${(i + 100).toString(16).padStart(40, '0')}` as `0x${string}`,
+              balance: ((10 - i) * 250000).toString(),
+              percentOfTotal: (10 - i) * 1.2,
+              lastUpdatedBlock: (1284500 - i * 7).toString(),
+            }))
+          );
+        },
+      );
+      // Real endpoint wraps in {offeringId, rows}; mock returns a flat array.
+      return Array.isArray(res) ? res : res.rows;
+    },
     enabled: Boolean(offeringId),
   });
 }
@@ -107,6 +122,23 @@ export function useCreateOffering() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.offerings.all });
+    },
+  });
+}
+
+export function useUpdateOffering(id: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateOfferingDto) => {
+      if (!id) throw new Error('Missing offering id');
+      return await api.call<OfferingResponseDto>(`/api/offerings/${id}`, {
+        method: 'PATCH',
+        body: input,
+      });
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.offerings.all });
+      if (id) void qc.invalidateQueries({ queryKey: queryKeys.offerings.detail(id) });
     },
   });
 }

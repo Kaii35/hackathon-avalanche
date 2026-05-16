@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, Menu, Search, Lock, User2, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Menu, Search, Lock, User2, LogOut, ChevronDown, Wallet } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import {
   Avatar,
   AvatarFallback,
@@ -27,8 +28,9 @@ import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
 import { DashboardLoadingScreen } from '@/components/loading/DashboardLoadingScreen';
 import { MobileNav } from './MobileNav';
 
-// Same hold duration the login flow uses, for visual symmetry.
-const LOGOUT_HOLD_MS = 4000;
+// Minimum splash so the farewell greeting is readable on fast logouts.
+// Match the login/register splash for visual symmetry.
+const LOGOUT_HOLD_MS = 1200;
 
 export function Topbar() {
   const setCommand = useUiStore((s) => s.setCommandOpen);
@@ -152,11 +154,32 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {walletReady && address && (
+        {walletReady && address ? (
           <div className="hidden items-center rounded-md border border-border-subtle bg-surface px-2 py-1 sm:flex">
             <WalletAddress address={address} size="sm" />
           </div>
-        )}
+        ) : mounted && session ? (
+          // Direct call to RainbowKit's openConnectModal — no intermediate
+          // dialog wrapper. Previous version opened a custom Dialog whose
+          // overlay covered RainbowKit's modal and ate the wallet item clicks.
+          // Admins also need a wallet (to sign on-chain compliance actions),
+          // so we don't gate on role anymore.
+          <ConnectButton.Custom>
+            {({ openConnectModal, mounted: rkMounted }) => (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="hidden sm:inline-flex"
+                onClick={openConnectModal}
+                disabled={!rkMounted}
+              >
+                <Wallet className="h-4 w-4" />
+                <span>Conectar wallet</span>
+              </Button>
+            )}
+          </ConnectButton.Custom>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
