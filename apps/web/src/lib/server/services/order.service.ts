@@ -1,4 +1,4 @@
-import { keccak256, encodeAbiParameters, type Address } from 'viem';
+import { keccak256, encodeAbiParameters, parseUnits, type Address } from 'viem';
 import { verifyTypedData } from 'viem';
 import { ORDER_TYPE, getDomain, type OrderPayload } from '@hack/sdk';
 import { Prisma, prisma } from '@hack/database';
@@ -23,6 +23,10 @@ function bookCacheKey(offeringId: string): string {
   return `book:${offeringId}`;
 }
 
+/**
+ * Computes a deterministic order hash matching the on-chain ORDER_TYPEHASH.
+ * Includes all 8 fields: maker, token, paymentToken, side, qty, price, expiresAt, salt.
+ */
 function computeOrderHash(
   payload: OrderPayload,
   verifyingContract: Address,
@@ -34,6 +38,7 @@ function computeOrderHash(
       [
         { type: 'string' },
         { type: 'uint256' },
+        { type: 'address' },
         { type: 'address' },
         { type: 'address' },
         { type: 'address' },
@@ -49,6 +54,7 @@ function computeOrderHash(
         verifyingContract,
         payload.maker,
         payload.token,
+        payload.paymentToken,
         payload.side,
         payload.qty,
         payload.price,
@@ -104,12 +110,23 @@ export const orderService = {
     const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 43113);
     const verifyingContract = (process.env.NEXT_PUBLIC_SETTLEMENT ??
       '0x0000000000000000000000000000000000000001') as Address;
+    const paymentToken = (process.env.NEXT_PUBLIC_USDC ??
+      '0x0000000000000000000000000000000000000002') as Address;
+
+    // Canonical scaling: parseUnits is the single source of truth.
+    // Frontend signs with these same values; backend re-derives to verify.
+    const TOKEN_DECIMALS = 18;
+    const USDC_DECIMALS = 6;
+    const qtyBaseUnits = parseUnits(dto.qty, TOKEN_DECIMALS);
+    const priceBaseUnits = parseUnits(dto.price, USDC_DECIMALS);
+
     const payload: OrderPayload = {
       maker: dto.maker,
       token: offering.tokenAddress as Address,
+      paymentToken,
       side: dto.side === 'buy' ? 0 : 1,
-      qty: BigInt(Math.floor(Number(dto.qty))),
-      price: BigInt(Math.floor(Number(dto.price) * 100)),
+      qty: qtyBaseUnits, // base units — matches what the wallet signed
+      price: priceBaseUnits, // base units — matches what the wallet signed
       expiresAt: BigInt(Math.floor(expiresAt.getTime() / 1000)),
       salt: BigInt(dto.salt),
     };

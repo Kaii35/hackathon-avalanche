@@ -18,6 +18,8 @@ import {
   History,
   ChevronLeft,
   Building2,
+  PieChart,
+  Coins,
 } from 'lucide-react';
 import { cn } from '@hack/ui';
 import { Button } from '@hack/ui';
@@ -43,6 +45,7 @@ const investorNav: NavSection[] = [
       { label: 'Inicio', href: '/investor', icon: LayoutDashboard },
       { label: 'Portafolio', href: '/investor/portfolio', icon: Briefcase },
       { label: 'Marketplace', href: '/investor/offerings', icon: Store },
+      { label: 'Dividendos', href: '/investor/dividends', icon: Coins },
       { label: 'Mis órdenes', href: '/investor/orders', icon: ListChecks },
       { label: 'Trades', href: '/investor/trades', icon: ScrollText },
       { label: 'Watchlist', href: '/investor/watchlist', icon: Star },
@@ -58,6 +61,7 @@ const issuerNav: NavSection[] = [
       { label: 'Inicio', href: '/issuer', icon: LayoutDashboard },
       { label: 'Mis ofertas', href: '/issuer/offerings', icon: Building2 },
       { label: 'Crear oferta', href: '/issuer/offerings/new', icon: PlusCircle },
+      { label: 'Dividendos', href: '/issuer/dividends', icon: Coins },
     ],
   },
 ];

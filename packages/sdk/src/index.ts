@@ -19,3 +19,4 @@ export type {
   ForcedTransferEvent,
   TokenDeployedEvent,
 } from './events/types';
+export type { SettlementOrder } from './eip712';

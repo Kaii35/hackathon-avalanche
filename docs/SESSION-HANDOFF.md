@@ -37,8 +37,22 @@ Resolver iliquidez del inversionista IFC (hoy 5–10 años atrapado sin poder ve
 - Auth real (login/register/logout/session/profile) con bcrypt + JWT httpOnly
 - **Registro con confirmar contraseña** (cross-field Zod refine)
 - DB schema migrada (Supabase) + seed
-- Mock blockchain SDK + indexer event-driven (backend sigue en mock para orderbook/matching)
-- 22+ endpoints API con validación + RBAC + rate limiting
+- **SDK avalanche adapter implementado** (`packages/sdk/src/blockchain/avalanche/`) — 5 adapters viem-based; `CHAIN_MODE=avalanche` arranca sin throw, lecturas reales validadas contra Fuji (`isVerified`, `getFee`, `balanceOf` ok). `executeMatch` cablea full Order tuples + signatures EIP-712 al `Settlement` deployado. Schema EIP-712 del SDK arreglado para incluir `paymentToken` + domain `ArkangelesSettlement` (match al contrato).
+- **UI signing + approve flow end-to-end** (Bloque A paso 2 cerrado) — `PlaceOrderPanel` firma órdenes via wagmi `signTypedData` contra el `Settlement` real; nuevo `ApproveSettlementButton` que lee allowance en vivo y aprueba `approve(settlement, maxUint256)` cuando es insuficiente. Banner KYC informativo. Toast con link a Snowscan al aprobar. La UI de orderbook usa polling real cada 5s contra `/api/orders/book/:id`.
+- **Unidad reconciliada end-to-end** — el frontend computa base units con `parseUnits(qty, 18)` y `parseUnits(price, 6)` solo para firmar; envía pretty units + signature al backend; `order.service.ts` y `matching.service.ts` re-derivan base units con la misma fórmula y pasan al adapter ya escaladas; `AvalancheSettlement` es pass-through. El digest que firma el wallet coincide exactamente con el que el contrato verifica → `recover()` funciona y `executeMatch` queda settleable.
+- **Offering ARKDEMO sembrada en DB** (`00000000-0000-4000-8000-000000000001`) apuntando al token real `0x1C18933B…0C26` en Fuji. Endpoint `/api/offerings/<id>` responde con la oferta real.
+- **Smoke test on-chain del SDK adapter exitoso** — TX [`0x9f77e768…39d46`](https://testnet.snowscan.xyz/tx/0x9f77e768c232b3b830577164bb89153e6750cfce31f47d5a2cdcd1b952d39d46) en bloque 55432032: alice firma sell de 5 ARKDEMO @ 4 USDC, bob firma buy de 5 ARKDEMO @ 4.50 USDC, el SDK via `IfcMarketClient.settlement.executeMatch` settlea atómicamente — Transfer ARKDEMO + Transfer USDC + Fee + `TradeExecuted` event. Status `1`, gasUsed 175k. Es el mismo path que toma el matching engine del backend → prueba que el loop completo está funcional.
+- **Bug fix en los 4 adapters avalanche** — `wc.getAddresses()` devuelve `Address[]` (strings), causando que viem use `eth_sendTransaction` (RPC-signing, no soportado en nodos públicos). Cambiado a `wc.account` (LocalAccount object) en `AvalancheSettlement`, `AvalancheIdentityRegistry`, `AvalancheComplianceRegistry`, `AvalancheSecurityToken`. Sin este fix, ninguna escritura on-chain funcionaba desde el SDK.
+- **`DividendDistributor` Idea 2 — primer pilar de actos corporativos cerrado** — contrato push-allocation + pull-claim deployado en Fuji `0x71dA4E2cbc181F7eE9936c7A8243566fDcAb93c6`, source verified en Snowscan. 17 tests Foundry verde (158 totales, 0 regresiones). Smoke test on-chain ejecutado: deployer declara dividendo de 20 USDC a alice (85% = 17) + bob (15% = 3); ambos hacen pull-claim exitoso; balances finales correctos; contrato queda con 0 USDC sin fondos atrapados. TX declare [`0x0faa80ee…1cf7499c`](https://testnet.snowscan.xyz/tx/0x0faa80ee498d06a4c40883d164ddfc1f96836a29e5dd5184245cc1151cf7499c). El contrato delega autorización al `DEFAULT_ADMIN_ROLE` del `SecurityToken` (no tiene Ownable propio); el issuer admin de cada oferta es quien declara.
+- **`Governance` Idea 2 — segundo pilar cerrado** — contrato propose + weighted vote + finalize deployado en Fuji `0xfd2619c9d7b36c32309e613065bc0fd4f71e5f6d`, source verified en Snowscan. 25 tests Foundry verde (183 totales, 0 regresiones). Mismo patrón que `DividendDistributor`: push-allocation snapshot al proponer, pull-vote por holder. Outcomes declarativos (Passed/Defeated/Tie), sin ejecución on-chain — el issuer ejecuta la decisión off-chain (drag-along, dividendo, cambio estatutario). Smoke test on-chain: deployer propone "Aprobar dividendo Q1 2026" a alice (peso 85) + bob (peso 15) con deadline +180s; alice vota For, bob vota Against; tras deadline, deployer llama `finalize(0)` → `ProposalFinalized(0, Passed, 85, 15, 0)`. TX propose [`0xb8f92bc9…b8d83b16`](https://testnet.snowscan.xyz/tx/0xb8f92bc91964c1b099f027f5b93f8f373c5760e033cecd9dee22d3e9b8d83b16), finalize [`0x0d5064db…305b242b`](https://testnet.snowscan.xyz/tx/0x0d5064db1e35211843394b0d35619fbb793d3c57580ac1e9ceae5471305b242b).
+- **Fixes runtime descubiertos en QA manual del usuario** (puramente client-side, errores que el monitor de logs no captura porque ocurren en el error boundary de React):
+  - `useOfferings` recibía respuesta paginada `{ items, total, page, pageSize }` del API real pero el tipo era `MockOffering[]`. Causaba `(intermediate value).slice is not a function` al renderizar el dashboard tras login. Fix en [apps/web/src/lib/client/queries/offerings.ts](apps/web/src/lib/client/queries/offerings.ts): el hook ahora hace `Array.isArray(raw) ? raw : raw?.items ?? []` y aplica filtro de status post-fetch como defensa.
+  - `OfferingCard` accedía a `offering.trend7d.at(-1)` pero el API real no devuelve campos UI-only (`trend7d`, `holders`, `lastTradePrice`, `thumbnailColor`, `pricingHistory`, `documents`, `fundedPct`, `volume24h`). Causaba `Cannot read properties of undefined (reading 'at')`. Fix con helper `enrichOffering()` en el mismo archivo del hook — rellena defaults seguros (`trend7d: [0,0,0,0,0,0,0]`, `holders: 0`, `lastTradePrice ?? pricePerUnit`, etc.) antes de que la respuesta llegue a cualquier componente.
+- **UX wallet ↔ sesión sincronizado** (request del usuario en QA: "la wallet no debería conectarse antes de iniciar sesión"):
+  - `useLogout` ahora llama `disconnect()` de wagmi además de limpiar la sesión → al cerrar sesión, la wallet también se desconecta limpiamente (no queda stale en localStorage).
+  - Nuevo componente cliente `<DisconnectWalletOnAuth />` ([apps/web/src/components/auth/DisconnectWalletOnAuth.tsx](apps/web/src/components/auth/DisconnectWalletOnAuth.tsx)) incluido en el layout `(auth)` → si el usuario cae en `/login` o `/register` con una wallet stale auto-reconectada, se desconecta en mount. Garantiza que la wallet solo esté conectada con sesión activa.
+- Indexer event-driven mock-compat (sigue listening Redis Streams, sin cambios en este pase)
+- 22 endpoints API con validación + RBAC + rate limiting
 - Wallet integration (Core priorizada, MetaMask, Coinbase, Rabby, Injected)
 - Modal RainbowKit con tema brand-tinted (radii, shadows, group labels, brand glow)
 - Frontend reads live de Fuji vía wagmi (`useKycStatus`, `useTokenHolding`, `OnChainStatusCard`)
@@ -48,6 +62,8 @@ Resolver iliquidez del inversionista IFC (hoy 5–10 años atrapado sin poder ve
 
 **Real on-chain integrations (sesión 2):**
 
+- Holdings IFC en dashboard (derivados de wallet, no son los tokens reales todavía — solo el demo ARKDEMO sí es real)
+- ~~Orderbook animado (timer-based)~~ — ahora hace polling real cada 5s contra `/api/orders/book/:id`
 - **Sumsub KYC sandbox integrado end-to-end**: token endpoint, polling endpoint, webhook endpoint (HMAC SHA256/SHA512/SHA1), WebSDK widget en `/onboarding/kyc`
 - **Real SIWE-like wallet linking**: `POST /api/users/me/wallet` con verificación de firma (recoverMessageAddress de viem), case-insensitive matching, anti-replay con `Issued At` timestamp ±10 min
 - **On-chain `IdentityRegistry.verifyAddress` real**: `lib/server/chain/identityRegistry.ts` con viem directo a Fuji (bypassea el adapter avalanche del SDK que sigue tirando throw), idempotente (lee `isVerified` antes de escribir)
@@ -62,12 +78,19 @@ Resolver iliquidez del inversionista IFC (hoy 5–10 años atrapado sin poder ve
 
 **Pendiente:**
 
+- ~~Snowtrace contract verification~~ — COMPLETADO (6/6 contratos verified, ver `docs/deployment.md`)
+- ~~Adapter avalanche real en `packages/sdk`~~ — COMPLETADO (ver sección 9 y "Deuda técnica" abajo)
+- ~~UI frontend para firma EIP-712 + orderbook visible~~ — COMPLETADO (Bloque A paso 2). Loop user→sign→match→settle reconciliable; falta smoke test on-chain con 2 wallets reales que termine en un TX exitoso en Snowtrace
 - ~~KYC provider real~~ ✅ Sumsub sandbox integrado
 - ~~Real SIWE wallet linking~~ ✅
 - ~~Admin investor data real desde DB~~ ✅
 - Snowtrace contract verification
 - Adapter avalanche real en `packages/sdk` (reemplaza mock backend → matching on-chain)
 - Módulos compliance: `MaxInvestmentModule`, `ClaimIssuer`
+- ~~Contrato Idea 2: `DividendDistributor`~~ — DEPLOYADO + verified + smoke-tested
+- ~~Contrato Idea 2: `Governance`~~ — DEPLOYADO + verified + smoke-tested
+- ~~UI dividendos~~ — COMPLETADA (Bloque B paso 8 + 9)
+- UI Idea 2 pendiente: Governance (issuer crear propuesta + investor votar)
 - Auditoría formal post-hackathon (Halborn/OZ)
 - Workers BullMQ persistentes
 - WalletConnect mobile (necesita Reown project ID)
@@ -75,6 +98,39 @@ Resolver iliquidez del inversionista IFC (hoy 5–10 años atrapado sin poder ve
 - Pitch deck + video demo
 - AvaCloud subnet (producción)
 - Sandbox CNBV
+
+**Deuda técnica identificada (avalanche adapter):**
+
+- `freeze/unfreeze sin token param`: La interfaz `SecurityTokenAdapter.freeze(wallet, reason)` no incluye el `token` address porque fue diseñada para el mock (freeze global). En `SecurityToken.sol`, freeze es per-token (`freezeWallet` en el contrato del token específico). Fix: refactorizar `SecurityTokenAdapter` para incluir `token?: Address` en freeze/unfreeze, o agregar un método separado `freezeForToken(token, wallet, reason)`. El endpoint `/api/admin/freeze` debe pasar el token address directamente al contrato, no via el adapter genérico.
+
+- `Compliance modules no se bindean en deploy`: `TokenFactory.deployOffering` no bindea `HoldingPeriodModule`, `MaxHoldersModule`, ni `JurisdictionModule` por defecto. El adapter `AvalancheSecurityToken.deploy` ignora `lockupUntil`, `maxHolders`, `allowedJurisdictions`. Fix: agregar llamadas `ComplianceManager.bindModule` post-deploy en el adapter, o crear un flujo separado de "attach modules".
+
+- `transfer holder-signed no soportado server-side`: `AvalancheSecurityToken.transfer` lanza error explicativo. Para el secundario regulado esto es correcto (el Settlement contract hace la transferencia via `safeTransferFrom` con pre-aprobación del holder). No es deuda — es by-design.
+
+- ~~`Qty/price scaling inconsistente`~~ — COMPLETADO (ver sección "Convención EIP-712" abajo).
+
+## Convención EIP-712 + unidades (acordada frontend ↔ backend)
+
+**Esta es la única fuente de verdad. No se puede cambiar sin actualizar ambas capas.**
+
+- `CreateOrderDto.qty` y `CreateOrderDto.price` son strings **pretty** (e.g. `"100"`, `"5.50"`).
+- El frontend calcula base units antes de firmar:
+  - `qtyBaseUnits  = parseUnits(qty, 18)` (token 18 decimales)
+  - `priceBaseUnits = parseUnits(price, 6)` (USDC 6 decimales)
+- El payload EIP-712 firmado por el wallet contiene `qty: qtyBaseUnits` y `price: priceBaseUnits`.
+- El frontend envía al POST `/api/orders` los valores **pretty + firma**; NO envía base units.
+- El backend re-deriva base units con la misma fórmula y verifica la firma (digest idéntico).
+- DB guarda valores **pretty** (Decimal(38,18)).
+- `matching.service.ts` re-deriva base units con `parseUnits` antes de construir los tuples de Settlement.
+- `AvalancheSettlement.ts` es pass-through: recibe base units, las pasa directamente al contrato.
+
+## Offering ARKDEMO (token real en Fuji)
+
+- **Offering ID:** `00000000-0000-4000-8000-000000000001`
+- **Token address:** `0x1C18933bDcFEDc048795cBd0aaEDD3D0e42F0C26`
+- **Symbol:** ARKDEMO
+- **Chain:** Avalanche Fuji (43113)
+- El frontend debe usar este ID para enlazar el orderbook y el portfolio ARKDEMO.
 
 ---
 

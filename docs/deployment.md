@@ -186,11 +186,94 @@ Las lecturas hacen refetch automático cada 30s.
 
 Para ver el caso "con holdings" — importa la deployer key en MetaMask y verás 10,000.25 USDC. O la wallet de alice (`0x08115fA8...08d9`) para ver el caso post-trade (90 ARKDEMO + 49.75 USDC).
 
+## Verificación de source code en Snowtrace / Routescan
+
+**Estado: ✅ los 6 contratos están verificados en Snowtrace testnet.**
+
+| Contrato                  | Verified | Snowscan                                                                             |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `IdentityRegistry`        | ✅       | https://testnet.snowscan.xyz/address/0x8Ca947A8c9714548eCe376a879D6755048018A82#code |
+| `ComplianceManager`       | ✅       | https://testnet.snowscan.xyz/address/0x8Db4A89761b208Da299dB9f1979252093A56C45A#code |
+| `TokenFactory`            | ✅       | https://testnet.snowscan.xyz/address/0x500B3F119E09fA4503f7fE8D5724Ca7776257956#code |
+| `Settlement`              | ✅       | https://testnet.snowscan.xyz/address/0x491BCC419E8Dd90d1783c234151c5B57A0Dc2A2A#code |
+| `MockUSDC`                | ✅       | https://testnet.snowscan.xyz/address/0x31E5aA694baebF0420170bD9b132F9b5c4b38A83#code |
+| `SecurityToken` (ARKDEMO) | ✅       | https://testnet.snowscan.xyz/address/0x1C18933bDcFEDc048795cBd0aaEDD3D0e42F0C26#code |
+
+**API key:** Routescan testnet acepta el placeholder literal `verifyContract` sin signup — ya está en `.env` como `ROUTESCAN_API_KEY=verifyContract`. Para mainnet hay que obtener key real en https://routescan.io.
+
+### Procedimiento reproducible
+
+```powershell
+$RPC = "https://api.avax-test.network/ext/bc/C/rpc"
+$VERIFIER = "https://api.routescan.io/v2/network/testnet/evm/43113/etherscan"
+$KEY = "verifyContract"  # placeholder testnet, no requiere signup
+Push-Location packages/blockchain
+
+# 1) IdentityRegistry — constructor(address initialOwner)
+forge verify-contract `
+  0x8Ca947A8c9714548eCe376a879D6755048018A82 src/IdentityRegistry.sol:IdentityRegistry `
+  --chain-id 43113 --verifier-url $VERIFIER --etherscan-api-key $KEY `
+  --constructor-args (cast abi-encode "constructor(address)" 0x66Cb45eE3646759179901567Fa81Fe2EBa639278) `
+  --watch
+
+# 2) ComplianceManager — constructor(address initialOwner, address registry)
+forge verify-contract `
+  0x8Db4A89761b208Da299dB9f1979252093A56C45A src/ComplianceManager.sol:ComplianceManager `
+  --chain-id 43113 --verifier-url $VERIFIER --etherscan-api-key $KEY `
+  --constructor-args (cast abi-encode "constructor(address,address)" `
+      0x66Cb45eE3646759179901567Fa81Fe2EBa639278 `
+      0x8Ca947A8c9714548eCe376a879D6755048018A82) `
+  --watch
+
+# 3) TokenFactory — constructor(address initialOwner, address complianceManager)
+forge verify-contract `
+  0x500B3F119E09fA4503f7fE8D5724Ca7776257956 src/TokenFactory.sol:TokenFactory `
+  --chain-id 43113 --verifier-url $VERIFIER --etherscan-api-key $KEY `
+  --constructor-args (cast abi-encode "constructor(address,address)" `
+      0x66Cb45eE3646759179901567Fa81Fe2EBa639278 `
+      0x8Db4A89761b208Da299dB9f1979252093A56C45A) `
+  --watch
+
+# 4) MockUSDC — constructor()
+forge verify-contract `
+  0x31E5aA694baebF0420170bD9b132F9b5c4b38A83 src/MockUSDC.sol:MockUSDC `
+  --chain-id 43113 --verifier-url $VERIFIER --etherscan-api-key $KEY `
+  --watch
+
+# 5) Settlement — constructor(address admin, address matcher, address feeRecipient, uint256 feeBps)
+forge verify-contract `
+  0x491BCC419E8Dd90d1783c234151c5B57A0Dc2A2A src/Settlement.sol:Settlement `
+  --chain-id 43113 --verifier-url $VERIFIER --etherscan-api-key $KEY `
+  --constructor-args (cast abi-encode "constructor(address,address,address,uint256)" `
+      0x66Cb45eE3646759179901567Fa81Fe2EBa639278 `
+      0x66Cb45eE3646759179901567Fa81Fe2EBa639278 `
+      0x66Cb45eE3646759179901567Fa81Fe2EBa639278 `
+      50) `
+  --watch
+
+# 6) ARKDEMO SecurityToken (hijo de la factory) — constructor(string,string,address,address)
+#    El admin pasado al constructor es la FACTORY (no el issuerAdmin final),
+#    porque la factory hace el handover atómico de roles después del deploy.
+forge verify-contract `
+  0x1C18933bDcFEDc048795cBd0aaEDD3D0e42F0C26 src/SecurityToken.sol:SecurityToken `
+  --chain-id 43113 --verifier-url $VERIFIER --etherscan-api-key $KEY `
+  --constructor-args (cast abi-encode "constructor(string,string,address,address)" `
+      "Arkangeles Demo Offering" `
+      "ARKDEMO" `
+      0x500B3F119E09fA4503f7fE8D5724Ca7776257956 `
+      0x8Db4A89761b208Da299dB9f1979252093A56C45A) `
+  --watch
+
+Pop-Location
+```
+
+Foundry inferirá `viaIR=true`, `optimizer_runs=200`, `solc=0.8.24` desde `foundry.toml`. La verificación demora ~30–60s por contrato. Resultado esperado: `Pass - Verified`.
+
 ## Próximos pasos sugeridos
 
-1. **Verificar contratos en Snowtrace/Routescan** — submit del source code vía `forge verify-contract` para auditabilidad pública.
-2. **Adapter avalanche real en `packages/sdk`** — reemplazar los mock adapters por lecturas/escrituras vía viem contra las addresses live; el backend matching engine settlearía a chain real.
-3. **Módulos pendientes** — `MaxInvestmentModule` (tope por inversionista no calificado) y `ClaimIssuer` (claims firmadas para identidad portable).
+1. **Adapter avalanche real en `packages/sdk`** — reemplazar los mock adapters por lecturas/escrituras vía viem contra las addresses live; el backend matching engine settlearía a chain real.
+2. **Módulos pendientes** — `MaxInvestmentModule` (tope por inversionista no calificado) y `ClaimIssuer` (claims firmadas para identidad portable).
+3. **`DividendDistributor` + `Governance`** — pilar Idea 2 de la definición (actos corporativos automatizados).
 4. **Auditoría formal** (post-hackathon) — recomendado Halborn u OpenZeppelin Audits.
 
 ## Notas de seguridad
