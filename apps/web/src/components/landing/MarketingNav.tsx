@@ -5,6 +5,8 @@ import { Button } from '@hack/ui';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ArrowRight, Wallet } from 'lucide-react';
 import { useSession } from '@/lib/client/queries/session';
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
+import { Logo } from '@/components/brand/Logo';
 import type { SessionUser } from '@hack/shared';
 
 function dashboardFor(role: SessionUser['role']): string {
@@ -20,11 +22,8 @@ export function MarketingNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border-subtle bg-canvas/70 backdrop-blur-md">
       <div className="container flex h-14 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white shadow-glow-brand">
-            ▲
-          </span>
-          <span className="font-semibold tracking-tight text-foreground">Mercado IFC</span>
+        <Link href="/" aria-label="Mercado IFC — inicio">
+          <Logo size={26} />
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-foreground-secondary md:flex">
           <a href="#producto" className="hover:text-foreground transition-colors">
@@ -41,6 +40,7 @@ export function MarketingNav() {
           </a>
         </nav>
         <div className="flex items-center gap-2">
+          <AnimatedThemeToggler />
           <ConnectButton.Custom>
             {({ openConnectModal, openAccountModal, openChainModal, account, chain, mounted }) => {
               const ready = mounted;

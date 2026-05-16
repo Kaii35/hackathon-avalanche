@@ -35,7 +35,7 @@ export const MOCK_OFFERINGS: MockOffering[] = [
     volume24h: 845000,
     lastTradePrice: 102.4,
     trend7d: [100.1, 100.4, 100.9, 101.6, 101.3, 102.0, 102.4],
-    thumbnailColor: '#E84142',
+    thumbnailColor: '#2A5BFF',
     pricingHistory: Array.from({ length: 30 }).map((_, i) => ({
       ts: new Date(Date.now() - (29 - i) * 86400000).toISOString(),
       price: 98 + Math.sin(i / 3) * 2 + i * 0.15,

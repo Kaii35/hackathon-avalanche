@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Logo } from '@/components/brand/Logo';
 import {
   Activity,
   Briefcase,
@@ -63,15 +64,8 @@ export function MobileNav() {
   const home = homeForPath(path);
   return (
     <nav className="flex h-full flex-col p-4">
-      <Link
-        href={home}
-        className="mb-6 flex items-center gap-2"
-        aria-label="Ir al inicio del portal"
-      >
-        <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white">
-          ▲
-        </span>
-        <span className="font-semibold tracking-tight text-foreground">Mercado IFC</span>
+      <Link href={home} className="mb-6 inline-block" aria-label="Ir al inicio del portal">
+        <Logo size={24} />
       </Link>
       <div className="flex-1 overflow-y-auto pr-2">
         {sections.map((section) => (

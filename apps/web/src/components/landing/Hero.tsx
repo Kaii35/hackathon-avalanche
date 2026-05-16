@@ -4,20 +4,30 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Badge, Button } from '@hack/ui';
+import { ArtificialHeroBackground } from '@/components/ui/artificial-hero';
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-border-subtle">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-mesh opacity-90" />
+    <section className="relative isolate overflow-hidden border-b border-border-subtle">
+      {/* Animated cosmic background — rotating ASCII orb + film grain in Arkangeles blue */}
+      <ArtificialHeroBackground />
+      {/* Readability vignette: dark in dark mode, light wash in light mode so the
+          headline always sits comfortably over the busy canvas */}
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent"
+        className="pointer-events-none absolute inset-0 [background:radial-gradient(ellipse_at_center,rgba(247,249,251,0.35)_0%,rgba(247,249,251,0.55)_55%,rgba(247,249,251,0.85)_100%)] dark:[background:radial-gradient(ellipse_at_center,rgba(0,0,0,0.45)_0%,rgba(0,0,0,0.65)_55%,rgba(0,0,0,0.92)_100%)]"
       />
+      {/* Bottom fade into next section */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 [background-image:radial-gradient(circle_at_50%_-10%,rgba(232,65,66,0.20)_0,transparent_55%)]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-canvas"
       />
-      <div className="container relative pt-20 pb-24 lg:pt-28 lg:pb-32">
+      {/* Brand seam at top */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent"
+      />
+      <div className="container relative z-10 pt-20 pb-24 lg:pt-28 lg:pb-32">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -140,14 +150,14 @@ function MiniChart() {
       <svg viewBox="0 0 200 60" className="mt-2 h-16 w-full">
         <defs>
           <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#E84142" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#E84142" stopOpacity="0" />
+            <stop offset="0%" stopColor="#2A5BFF" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#2A5BFF" stopOpacity="0" />
           </linearGradient>
         </defs>
         <polyline
           points="0,42 18,38 36,40 54,32 72,34 90,28 108,30 126,22 144,18 162,14 180,8 200,12"
           fill="none"
-          stroke="#E84142"
+          stroke="#2A5BFF"
           strokeWidth="1.5"
         />
         <polygon

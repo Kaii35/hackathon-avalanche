@@ -73,8 +73,8 @@ export function Audiences() {
             ))}
           </ul>
           <Button asChild variant="secondary" className="mt-8" size="lg">
-            <Link href="/issuer/offerings/new">
-              Crear oferta de prueba
+            <Link href="/register?role=issuer">
+              Crear cuenta de IFC
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>

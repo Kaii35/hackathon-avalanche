@@ -22,6 +22,7 @@ import {
 import { useUiStore } from '@/lib/client/stores/uiStore';
 import { useWallet } from '@/hooks/useWallet';
 import { useSession, useLogout } from '@/lib/client/queries/session';
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
 import { MobileNav } from './MobileNav';
 
 export function Topbar() {
@@ -85,6 +86,8 @@ export function Topbar() {
           />
           Avalanche · Fuji
         </Badge>
+
+        <AnimatedThemeToggler />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

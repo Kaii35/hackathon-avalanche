@@ -2,7 +2,7 @@
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
-const COLORS = ['#E84142', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4', '#F472B6'];
+const COLORS = ['#2A5BFF', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4', '#F472B6'];
 const fmt = new Intl.NumberFormat('es-MX', {
   style: 'currency',
   currency: 'MXN',

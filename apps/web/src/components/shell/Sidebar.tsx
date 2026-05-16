@@ -22,6 +22,7 @@ import {
 import { cn } from '@hack/ui';
 import { Button } from '@hack/ui';
 import { useUiStore } from '@/lib/client/stores/uiStore';
+import { Logo, LogoMark } from '@/components/brand/Logo';
 
 interface NavItem {
   label: string;
@@ -111,14 +112,9 @@ export function Sidebar() {
         <Link
           href={home}
           aria-label="Ir al inicio del portal"
-          className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-elevated"
+          className="rounded-md px-1 py-1 transition-colors hover:bg-elevated"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white shadow-glow-brand">
-            ▲
-          </span>
-          {!collapsed && (
-            <span className="font-semibold tracking-tight text-foreground">Mercado IFC</span>
-          )}
+          {collapsed ? <LogoMark size={26} /> : <Logo size={24} />}
         </Link>
         <Button
           variant="ghost"

@@ -3,8 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme tokens (default — overridden by .dark on <html>) */
   :root {
-    /* Dark theme tokens (default) */
+    --bg-canvas: 220 20% 98%;
+    --bg-surface: 0 0% 100%;
+    --bg-elevated: 220 16% 96%;
+    --bg-overlay: 220 16% 92%;
+
+    --border-subtle: 220 14% 90%;
+    --border-default: 220 14% 84%;
+    --border-strong: 220 14% 72%;
+
+    --text-primary: 222 30% 10%;
+    --text-secondary: 220 12% 32%;
+    --text-tertiary: 220 8% 48%;
+    --text-disabled: 220 5% 64%;
+
+    --ring: 224 100% 58%;
+
+    color-scheme: light;
+  }
+
+  html.dark {
     --bg-canvas: 222 25% 5%;
     --bg-surface: 222 22% 7%;
     --bg-elevated: 222 18% 10%;
@@ -19,7 +39,7 @@
     --text-tertiary: 220 6% 52%;
     --text-disabled: 220 5% 38%;
 
-    --ring: 0 79% 58%;
+    --ring: 224 100% 65%;
 
     color-scheme: dark;
   }
@@ -40,9 +60,15 @@
   body {
     min-height: 100vh;
     background-image:
-      radial-gradient(at 0% 0%, rgba(232, 65, 66, 0.06) 0px, transparent 60%),
+      radial-gradient(at 0% 0%, rgba(42, 91, 255, 0.06) 0px, transparent 60%),
       radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.04) 0px, transparent 60%);
     background-attachment: fixed;
+  }
+
+  html.dark body {
+    background-image:
+      radial-gradient(at 0% 0%, rgba(42, 91, 255, 0.08) 0px, transparent 60%),
+      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 60%);
   }
 
   /* Numbers always tabular */
@@ -60,7 +86,7 @@
   }
 
   ::selection {
-    background-color: hsl(var(--ring) / 0.35);
+    background-color: hsl(var(--ring) / 0.3);
     color: hsl(var(--text-primary));
   }
 
@@ -107,14 +133,14 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+    background: linear-gradient(135deg, hsl(var(--text-primary)) 0%, hsl(var(--text-tertiary)) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
   .gradient-text-brand {
-    background: linear-gradient(135deg, #ffffff 0%, #ee5354 60%, #f59e0b 100%);
+    background: linear-gradient(135deg, hsl(var(--text-primary)) 0%, #2A5BFF 50%, #06B6D4 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;

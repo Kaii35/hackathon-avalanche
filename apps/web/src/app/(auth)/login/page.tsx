@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -21,6 +22,9 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/client/api';
 import { SESSION_KEY } from '@/lib/client/queries/session';
+import { DashboardLoadingScreen } from '@/components/loading/DashboardLoadingScreen';
+
+const LOADING_HOLD_MS = 4000;
 
 function landingFor(role: SessionUser['role']): string {
   if (role === 'admin') return '/admin';
@@ -31,6 +35,7 @@ function landingFor(role: SessionUser['role']): string {
 export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [transition, setTransition] = useState<{ greeting: string; href: string } | null>(null);
   const {
     register,
     handleSubmit,
@@ -48,8 +53,15 @@ export default function LoginPage() {
       });
       queryClient.setQueryData(SESSION_KEY, res.user);
       await queryClient.invalidateQueries({ queryKey: SESSION_KEY });
+      const firstName = res.user.firstName ?? res.user.displayName.split(' ')[0] ?? null;
+      const href = landingFor(res.user.role);
+      router.prefetch(href);
+      setTransition({
+        greeting: firstName ? `Bienvenido, ${firstName}` : 'Bienvenido',
+        href,
+      });
       toast.success(`Bienvenido, ${res.user.displayName}`);
-      router.push(landingFor(res.user.role));
+      window.setTimeout(() => router.push(href), LOADING_HOLD_MS);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -66,6 +78,12 @@ export default function LoginPage() {
       }
     }
   };
+
+  if (transition) {
+    return (
+      <DashboardLoadingScreen greeting={transition.greeting} subtitle="Preparando tu dashboard…" />
+    );
+  }
 
   return (
     <Card>

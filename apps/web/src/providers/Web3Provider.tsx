@@ -1,13 +1,24 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { WagmiProvider } from 'wagmi';
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
+import { useTheme } from 'next-themes';
 import '@rainbow-me/rainbowkit/styles.css';
 import { wagmiConfig } from '@/lib/client/wagmi';
 
-const theme = darkTheme({
-  accentColor: '#E84142',
+const ARKANGELES_BLUE = '#2A5BFF';
+
+const dark = darkTheme({
+  accentColor: ARKANGELES_BLUE,
+  accentColorForeground: '#ffffff',
+  borderRadius: 'medium',
+  fontStack: 'system',
+  overlayBlur: 'small',
+});
+
+const light = lightTheme({
+  accentColor: ARKANGELES_BLUE,
   accentColorForeground: '#ffffff',
   borderRadius: 'medium',
   fontStack: 'system',
@@ -32,11 +43,18 @@ const appInfo = {
 };
 
 export function Web3Provider({ children }: { children: ReactNode }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Until next-themes hydrates we default to dark to avoid a flash; afterwards
+  // RainbowKit follows the user's chosen theme.
+  const rkTheme = mounted && resolvedTheme === 'light' ? light : dark;
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <RainbowKitProvider
         appInfo={appInfo}
-        theme={theme}
+        theme={rkTheme}
         modalSize="compact"
         locale="es-419"
         initialChain={43113}

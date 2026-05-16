@@ -11,8 +11,8 @@ const steps = [
       <svg viewBox="0 0 200 120" className="h-32 w-full">
         <defs>
           <linearGradient id="il1" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#E84142" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#E84142" stopOpacity="0" />
+            <stop offset="0%" stopColor="#2A5BFF" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#2A5BFF" stopOpacity="0" />
           </linearGradient>
         </defs>
         <rect
@@ -22,11 +22,11 @@ const steps = [
           height="80"
           rx="10"
           fill="url(#il1)"
-          stroke="#E84142"
+          stroke="#2A5BFF"
           strokeOpacity="0.4"
         />
-        <circle cx="100" cy="50" r="14" fill="none" stroke="#E84142" strokeWidth="1.5" />
-        <path d="M85 80 Q100 65 115 80" fill="none" stroke="#E84142" strokeWidth="1.5" />
+        <circle cx="100" cy="50" r="14" fill="none" stroke="#2A5BFF" strokeWidth="1.5" />
+        <path d="M85 80 Q100 65 115 80" fill="none" stroke="#2A5BFF" strokeWidth="1.5" />
         <text
           x="100"
           y="105"

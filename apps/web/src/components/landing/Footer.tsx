@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/brand/Logo';
 
 export function Footer() {
   return (
@@ -6,11 +7,8 @@ export function Footer() {
       <div className="container py-14">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(3,_1fr)]">
           <div>
-            <Link href="/" className="flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white">
-                ▲
-              </span>
-              <span className="font-semibold tracking-tight">Mercado IFC</span>
+            <Link href="/" aria-label="Mercado IFC — inicio">
+              <Logo size={26} />
             </Link>
             <p className="mt-3 max-w-sm text-sm text-foreground-secondary">
               Mercado secundario regulado de participaciones IFC sobre Avalanche. White-label para
@@ -23,9 +21,9 @@ export function Footer() {
           <FooterCol
             title="Producto"
             items={[
-              { label: 'Investor Portal', href: '/investor' },
-              { label: 'Issuer Portal', href: '/issuer' },
-              { label: 'Compliance Admin', href: '/admin' },
+              { label: 'Soy inversionista', href: '/register?role=investor' },
+              { label: 'Soy una IFC', href: '/register?role=issuer' },
+              { label: 'Iniciar sesión', href: '/login' },
               { label: 'Docs', href: '#producto' },
             ]}
           />

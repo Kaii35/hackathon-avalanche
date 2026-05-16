@@ -92,7 +92,7 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
                   'Volumen',
                 ]}
               />
-              <Bar dataKey="volume" fill="#E84142" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="volume" fill="#2A5BFF" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>

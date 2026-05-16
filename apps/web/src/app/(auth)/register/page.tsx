@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +21,9 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/client/api';
 import { SESSION_KEY } from '@/lib/client/queries/session';
+import { DashboardLoadingScreen } from '@/components/loading/DashboardLoadingScreen';
+
+const LOADING_HOLD_MS = 4000;
 
 function passwordScore(pw: string) {
   let s = 0;
@@ -34,6 +37,10 @@ function passwordScore(pw: string) {
 export default function RegisterPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const requestedRole = searchParams.get('role');
+  const initialRole: RegisterDto['role'] =
+    requestedRole === 'issuer' || requestedRole === 'investor' ? requestedRole : 'investor';
   const {
     register,
     handleSubmit,
@@ -41,9 +48,10 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterDto>({
     resolver: zodResolver(RegisterSchema),
-    defaultValues: { role: 'investor', firstName: '', lastName: '', email: '', password: '' },
+    defaultValues: { role: initialRole, firstName: '', lastName: '', email: '', password: '' },
   });
   const [accept, setAccept] = useState(false);
+  const [transition, setTransition] = useState<{ greeting: string; href: string } | null>(null);
 
   const password = watch('password') ?? '';
   const score = useMemo(() => passwordScore(password), [password]);
@@ -60,8 +68,14 @@ export default function RegisterPage() {
       });
       queryClient.setQueryData(SESSION_KEY, res.user);
       await queryClient.invalidateQueries({ queryKey: SESSION_KEY });
+      const firstName = res.user.firstName ?? data.firstName;
+      router.prefetch('/onboarding');
+      setTransition({
+        greeting: firstName ? `Bienvenido, ${firstName}` : 'Cuenta creada',
+        href: '/onboarding',
+      });
       toast.success(`Cuenta creada. Bienvenido, ${res.user.displayName}`);
-      router.push('/onboarding');
+      window.setTimeout(() => router.push('/onboarding'), LOADING_HOLD_MS);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
@@ -78,6 +92,12 @@ export default function RegisterPage() {
   };
 
   const strengthLabels = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Excelente'];
+
+  if (transition) {
+    return (
+      <DashboardLoadingScreen greeting={transition.greeting} subtitle="Configurando tu cuenta…" />
+    );
+  }
 
   return (
     <Card>

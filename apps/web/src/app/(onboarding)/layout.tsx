@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Stepper } from '@hack/ui';
+import { Logo } from '@/components/brand/Logo';
 
 const STEPS = [
   { label: 'Datos', description: 'Tu información', href: '/onboarding' },
@@ -23,11 +24,8 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-mesh opacity-70" />
       <div className="container flex min-h-screen flex-col">
         <header className="flex h-14 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white">
-              ▲
-            </span>
-            <span className="font-semibold tracking-tight">Mercado IFC</span>
+          <Link href="/" aria-label="Mercado IFC — inicio">
+            <Logo size={26} />
           </Link>
           <Link href="/login" className="text-xs text-foreground-tertiary hover:text-foreground">
             Salir

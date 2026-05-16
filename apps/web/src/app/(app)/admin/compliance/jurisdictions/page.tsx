@@ -151,12 +151,12 @@ function WorldMap({ activeIso }: { activeIso: number[] }) {
             cx={d.x}
             cy={d.y}
             r="2"
-            fill={activeIso.includes(d.iso) ? '#E84142' : '#52525b'}
+            fill={activeIso.includes(d.iso) ? '#2A5BFF' : '#52525b'}
             stroke="white"
             strokeOpacity="0.1"
           />
           {activeIso.includes(d.iso) && (
-            <circle cx={d.x} cy={d.y} r="3.5" fill="none" stroke="#E84142" strokeOpacity="0.4">
+            <circle cx={d.x} cy={d.y} r="3.5" fill="none" stroke="#2A5BFF" strokeOpacity="0.4">
               <animate attributeName="r" from="2" to="6" dur="2s" repeatCount="indefinite" />
               <animate
                 attributeName="stroke-opacity"

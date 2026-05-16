@@ -13,7 +13,7 @@ const numFmt = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
 
 export function AreaTrend({
   data,
-  color = '#E84142',
+  color = '#2A5BFF',
   yLabel,
 }: {
   data: AreaPoint[];
