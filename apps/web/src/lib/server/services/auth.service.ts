@@ -92,7 +92,10 @@ export const authService = {
     if (!dto.message.includes(SIWE_DOMAIN)) {
       throw new AuthError('Mensaje SIWE inválido');
     }
-    if (!dto.message.includes(dto.address)) {
+    // `dto.address` is lowercased by the Zod transform, but the message
+    // carries the EIP-55 checksum form (mixed case). Compare case-insensitively
+    // so a wallet like 0xA24f… matches its lowercased counterpart.
+    if (!dto.message.toLowerCase().includes(dto.address)) {
       throw new AuthError('La dirección no coincide con el mensaje firmado');
     }
     const recovered = await recoverMessageAddress({

@@ -29,13 +29,13 @@ const steps = [
         <path d="M85 80 Q100 65 115 80" fill="none" stroke="#2A5BFF" strokeWidth="1.5" />
         <text
           x="100"
-          y="105"
+          y="106"
           textAnchor="middle"
           fill="#94a3b8"
-          fontSize="9"
-          fontFamily="monospace"
+          fontSize="10"
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
         >
-          0xa1b2…f9c4
+          0x66Cb45...9278
         </text>
       </svg>
     ),

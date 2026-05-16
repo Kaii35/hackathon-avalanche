@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, Menu, Search, Settings, User2, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Menu, Search, Lock, User2, LogOut, ChevronDown } from 'lucide-react';
 import {
   Avatar,
   AvatarFallback,
@@ -23,7 +24,11 @@ import { useUiStore } from '@/lib/client/stores/uiStore';
 import { useWallet } from '@/hooks/useWallet';
 import { useSession, useLogout } from '@/lib/client/queries/session';
 import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler';
+import { DashboardLoadingScreen } from '@/components/loading/DashboardLoadingScreen';
 import { MobileNav } from './MobileNav';
+
+// Same hold duration the login flow uses, for visual symmetry.
+const LOGOUT_HOLD_MS = 4000;
 
 export function Topbar() {
   const setCommand = useUiStore((s) => s.setCommandOpen);
@@ -31,15 +36,46 @@ export function Topbar() {
   const { address, realConnected } = useWallet();
   const { data: session, isLoading } = useSession();
   const logout = useLogout();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  // Wagmi's useAccount() returns `isConnected=false` on the server and may
+  // flip to true the moment it rehydrates on the client. Gating wallet-derived
+  // UI behind a mounted flag avoids the SSR/CSR hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const walletReady = mounted && realConnected;
 
   const displayName = session?.displayName ?? (isLoading ? 'Cargando…' : 'Invitado');
   const initials = session?.initials ?? '··';
   const email = session?.email ?? '';
 
+  const firstName = session?.firstName ?? session?.displayName?.split(' ')[0] ?? null;
+  const farewellGreeting = firstName ? `Hasta pronto, ${firstName}` : 'Hasta pronto';
+
   const onLogout = async () => {
-    await logout.mutateAsync();
-    router.push('/login');
+    if (loggingOut) return;
+    setLoggingOut(true);
+    // Pre-warm the landing so the handoff feels instant when the overlay clears.
+    router.prefetch('/');
+    // Fire the logout mutation in parallel with the visual hold so the user
+    // always sees the full farewell animation, even if the request is faster.
+    await Promise.all([
+      logout.mutateAsync(),
+      new Promise<void>((resolve) => window.setTimeout(resolve, LOGOUT_HOLD_MS)),
+    ]);
+    router.replace('/');
   };
+
+  if (loggingOut) {
+    return (
+      <DashboardLoadingScreen
+        greeting={farewellGreeting}
+        subtitle="Cerrando tu sesión de forma segura…"
+        footnote="Te esperamos de vuelta"
+        ariaLabel="Cerrando sesión"
+      />
+    );
+  }
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-border-subtle bg-canvas/80 px-4 backdrop-blur-md md:px-6">
@@ -81,7 +117,7 @@ export function Topbar() {
         <Badge variant="outline" className="hidden md:inline-flex">
           <span
             className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${
-              realConnected ? 'bg-success animate-pulse' : 'bg-foreground-tertiary'
+              walletReady ? 'bg-success animate-pulse' : 'bg-foreground-tertiary'
             }`}
           />
           Avalanche · Fuji
@@ -116,7 +152,7 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {realConnected && address && (
+        {walletReady && address && (
           <div className="hidden items-center rounded-md border border-border-subtle bg-surface px-2 py-1 sm:flex">
             <WalletAddress address={address} size="sm" />
           </div>
@@ -149,8 +185,8 @@ export function Topbar() {
                 <User2 className="h-4 w-4" /> Mi perfil
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="h-4 w-4" />
+            <DropdownMenuItem disabled>
+              <Lock className="h-4 w-4" />
               Configuración
             </DropdownMenuItem>
             <DropdownMenuSeparator />

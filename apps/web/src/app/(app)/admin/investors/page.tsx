@@ -51,7 +51,7 @@ export default function AdminInvestorsPage() {
         (i) =>
           i.fullName.toLowerCase().includes(q) ||
           i.email.toLowerCase().includes(q) ||
-          i.wallet.toLowerCase().includes(q),
+          (i.wallet?.toLowerCase().includes(q) ?? false),
       );
     }
     return list;
@@ -71,7 +71,12 @@ export default function AdminInvestorsPage() {
     {
       header: 'Wallet',
       accessorKey: 'wallet',
-      cell: ({ row }) => <WalletAddress address={row.original.wallet} size="sm" />,
+      cell: ({ row }) =>
+        row.original.wallet ? (
+          <WalletAddress address={row.original.wallet} size="sm" />
+        ) : (
+          <span className="text-2xs text-foreground-tertiary">— sin wallet</span>
+        ),
     },
     {
       header: 'KYC',
@@ -135,6 +140,10 @@ export default function AdminInvestorsPage() {
 
   const onFreezeToggle = async () => {
     if (!selected) return;
+    if (!selected.wallet) {
+      toast.error('Este inversionista aún no ha vinculado una wallet.');
+      return;
+    }
     if (reason.length < 5) {
       toast.error('La razón debe tener al menos 5 caracteres.');
       return;
@@ -209,7 +218,14 @@ export default function AdminInvestorsPage() {
             <div className="flex-1 overflow-y-auto p-6">
               <KeyValueList
                 items={[
-                  { label: 'Wallet', value: <WalletAddress address={selected.wallet} /> },
+                  {
+                    label: 'Wallet',
+                    value: selected.wallet ? (
+                      <WalletAddress address={selected.wallet} />
+                    ) : (
+                      <span className="text-foreground-tertiary">— sin vincular</span>
+                    ),
+                  },
                   { label: 'KYC', value: selected.kycStatus },
                   { label: 'Jurisdicción', value: selected.jurisdictionLabel },
                   { label: 'Calificado', value: selected.accredited ? 'Sí' : 'No' },
@@ -257,6 +273,7 @@ export default function AdminInvestorsPage() {
               variant={selected?.frozen ? 'success' : 'destructive'}
               onClick={onFreezeToggle}
               loading={freeze.isPending}
+              disabled={!selected?.wallet}
             >
               {selected?.frozen ? (
                 <>

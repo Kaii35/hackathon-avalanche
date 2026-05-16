@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import { RegisterSchema, type RegisterDto, type SessionUser } from '@hack/shared';
 import {
   Button,
@@ -17,11 +20,22 @@ import {
   Input,
   Label,
 } from '@hack/ui';
-import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/client/api';
 import { SESSION_KEY } from '@/lib/client/queries/session';
 import { DashboardLoadingScreen } from '@/components/loading/DashboardLoadingScreen';
+
+/**
+ * Form-only schema: same as RegisterSchema + a confirmPassword field. The
+ * confirm field never reaches the backend (we drop it before POST), so it
+ * lives here instead of polluting the shared DTO.
+ */
+const RegisterFormSchema = RegisterSchema.extend({
+  confirmPassword: z.string().min(1, 'Confirma tu contraseña'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmPassword'],
+});
+type RegisterFormDto = z.infer<typeof RegisterFormSchema>;
 
 const LOADING_HOLD_MS = 4000;
 
@@ -46,9 +60,16 @@ export default function RegisterPage() {
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterDto>({
-    resolver: zodResolver(RegisterSchema),
-    defaultValues: { role: initialRole, firstName: '', lastName: '', email: '', password: '' },
+  } = useForm<RegisterFormDto>({
+    resolver: zodResolver(RegisterFormSchema),
+    defaultValues: {
+      role: initialRole,
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
   });
   const [accept, setAccept] = useState(false);
   const [transition, setTransition] = useState<{ greeting: string; href: string } | null>(null);
@@ -56,15 +77,17 @@ export default function RegisterPage() {
   const password = watch('password') ?? '';
   const score = useMemo(() => passwordScore(password), [password]);
 
-  const onSubmit = async (data: RegisterDto) => {
+  const onSubmit = async (data: RegisterFormDto) => {
     if (!accept) {
       toast.error('Debes aceptar los términos.');
       return;
     }
     try {
+      // Strip the form-only field before hitting the API contract.
+      const { confirmPassword: _confirmPassword, ...payload } = data;
       const res = await api.call<{ user: SessionUser }>('/api/auth/register', {
         method: 'POST',
-        body: data,
+        body: payload satisfies RegisterDto,
       });
       queryClient.setQueryData(SESSION_KEY, res.user);
       await queryClient.invalidateQueries({ queryKey: SESSION_KEY });
@@ -187,6 +210,22 @@ export default function RegisterPage() {
               números y símbolos.
             </p>
             {errors.password && <p className="text-xs text-danger-fg">{errors.password.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirmPassword" required>
+              Confirmar contraseña
+            </Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Repite tu contraseña"
+              invalid={Boolean(errors.confirmPassword)}
+              {...register('confirmPassword')}
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-danger-fg">{errors.confirmPassword.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="role">Tipo de cuenta</Label>

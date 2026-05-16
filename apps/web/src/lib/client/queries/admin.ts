@@ -13,10 +13,18 @@ export function useInvestors() {
   });
 }
 
+type AuditResponse =
+  | AuditLogEntryDto[]
+  | { items: AuditLogEntryDto[]; total: number; page: number; pageSize: number };
+
 export function useAuditLog() {
   return useQuery({
     queryKey: queryKeys.admin.audit,
-    queryFn: () => apiOrMock<AuditLogEntryDto[]>(`/api/admin/audit-log`, () => MOCK_AUDIT_LOG),
+    queryFn: async (): Promise<AuditLogEntryDto[]> => {
+      const res = await apiOrMock<AuditResponse>(`/api/admin/audit-log`, () => MOCK_AUDIT_LOG);
+      // Real endpoint wraps in {items, total, page, pageSize}; mock returns a flat array.
+      return Array.isArray(res) ? res : res.items;
+    },
   });
 }
 

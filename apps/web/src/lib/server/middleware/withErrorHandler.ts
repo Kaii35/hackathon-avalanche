@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { logger } from '../logger';
 import { toErrorResponse } from '../errors/errorMapper';
 
-type AnyCtx = { params: Promise<unknown> } | undefined;
+// Next.js 15's generated route types require the second arg to be a defined
+// object with `params: Promise<...>`. Don't allow `| undefined` here or
+// `.next/types/app/.../route.ts` will fail the type check on build.
+type AnyCtx = { params: Promise<Record<string, string | string[]>> };
 
 export function withErrorHandler<TCtx extends AnyCtx = AnyCtx>(
   handler: (req: NextRequest, ctx: TCtx) => Promise<NextResponse> | NextResponse,

@@ -4,7 +4,8 @@ export interface MockInvestor {
   id: string;
   fullName: string;
   email: string;
-  wallet: `0x${string}`;
+  /** null when the user hasn't completed the wallet step of onboarding yet. */
+  wallet: `0x${string}` | null;
   kycStatus: 'pending' | 'verified' | 'rejected';
   jurisdiction: number;
   jurisdictionLabel: string;
