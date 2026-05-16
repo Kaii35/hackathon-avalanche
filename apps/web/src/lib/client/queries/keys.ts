@@ -8,11 +8,11 @@ export const queryKeys = {
   orders: {
     all: ['orders'] as const,
     book: (offeringId: string) => ['orders', 'book', offeringId] as const,
-    mine: (status?: string) => ['orders', 'mine', status ?? 'all'] as const,
+    mine: (wallet: string, status?: string) => ['orders', 'mine', wallet, status ?? 'all'] as const,
   },
   trades: {
     all: ['trades'] as const,
-    mine: () => ['trades', 'mine'] as const,
+    mine: (wallet: string) => ['trades', 'mine', wallet] as const,
     byOffering: (offeringId: string) => ['trades', 'offering', offeringId] as const,
   },
   portfolio: {

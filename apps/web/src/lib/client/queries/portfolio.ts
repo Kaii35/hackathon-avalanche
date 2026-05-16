@@ -3,31 +3,44 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiOrMock } from '../api';
 import { queryKeys } from './keys';
-import { MOCK_PORTFOLIO, MOCK_PORTFOLIO_HISTORY, MOCK_WALLET } from '../mocks/portfolio';
-import { MOCK_TRADES } from '../mocks/trades';
+import { getMockPortfolio, getMockPortfolioHistory } from '../mocks/portfolio';
+import { getMockTrades } from '../mocks/trades';
 import { MOCK_ACTIVITY } from '../mocks/activity';
 import type { PortfolioResponseDto } from '@hack/shared';
 
+/**
+ * Portfolio queries are wallet-scoped. They DO NOT run when no wallet is
+ * provided — that prevents the dashboard from showing fake "Alejandro"-style
+ * data while the user is logged in but hasn't connected a wallet yet.
+ */
 export function usePortfolio(wallet?: string) {
-  const w = wallet ?? MOCK_WALLET;
   return useQuery({
-    queryKey: queryKeys.portfolio.by(w),
-    queryFn: () => apiOrMock<PortfolioResponseDto>(`/api/portfolio/${w}`, () => MOCK_PORTFOLIO),
+    queryKey: queryKeys.portfolio.by(wallet ?? 'none'),
+    queryFn: () =>
+      apiOrMock<PortfolioResponseDto>(`/api/portfolio/${wallet}`, () =>
+        getMockPortfolio(wallet as string),
+      ),
+    enabled: Boolean(wallet),
   });
 }
 
 export function usePortfolioHistory(wallet?: string) {
-  const w = wallet ?? MOCK_WALLET;
   return useQuery({
-    queryKey: queryKeys.portfolio.history(w),
-    queryFn: () => apiOrMock(`/api/portfolio/${w}/history`, () => MOCK_PORTFOLIO_HISTORY),
+    queryKey: queryKeys.portfolio.history(wallet ?? 'none'),
+    queryFn: () =>
+      apiOrMock(`/api/portfolio/${wallet}/history`, () =>
+        getMockPortfolioHistory(wallet as string),
+      ),
+    enabled: Boolean(wallet),
   });
 }
 
-export function useMyTrades() {
+export function useMyTrades(wallet?: string) {
   return useQuery({
-    queryKey: queryKeys.trades.mine(),
-    queryFn: () => apiOrMock(`/api/trades/mine`, () => MOCK_TRADES),
+    queryKey: queryKeys.trades.mine(wallet ?? 'none'),
+    queryFn: () =>
+      apiOrMock(`/api/trades/mine?wallet=${wallet}`, () => getMockTrades(wallet as string)),
+    enabled: Boolean(wallet),
   });
 }
 

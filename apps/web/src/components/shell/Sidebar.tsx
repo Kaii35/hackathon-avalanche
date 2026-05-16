@@ -86,9 +86,16 @@ function navForPath(path: string): NavSection[] {
   return investorNav;
 }
 
+function homeForPath(path: string): string {
+  if (path.startsWith('/issuer')) return '/issuer';
+  if (path.startsWith('/admin')) return '/admin';
+  return '/investor';
+}
+
 export function Sidebar() {
   const path = usePathname() ?? '/';
   const sections = navForPath(path);
+  const home = homeForPath(path);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggle = useUiStore((s) => s.toggleSidebar);
 
@@ -102,8 +109,8 @@ export function Sidebar() {
     >
       <div className="flex h-14 items-center justify-between border-b border-border-subtle px-3">
         <Link
-          href="/"
-          aria-label="Inicio"
+          href={home}
+          aria-label="Ir al inicio del portal"
           className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-elevated"
         >
           <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white shadow-glow-brand">

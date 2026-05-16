@@ -1,26 +1,20 @@
 'use client';
 
 import { useAccount, useDisconnect } from 'wagmi';
-import { useOnboardingStore } from '@/lib/client/stores/onboardingStore';
-import { MOCK_WALLET } from '@/lib/client/mocks/portfolio';
 
 /**
- * Combined wallet hook: prefers wagmi connection, falls back to onboarding mock wallet.
+ * Wallet state for the connected viewer.
+ * Returns `address: null` when no wallet is connected — callers MUST handle that
+ * case (no fake mock fallback) so the UI can prompt the user to connect.
  */
 export function useWallet() {
   const { address, isConnected, status, chainId, connector } = useAccount();
-  const { walletConnected, walletAddress } = useOnboardingStore();
   const { disconnect } = useDisconnect();
 
-  const effectiveAddress = (address ??
-    (walletConnected ? walletAddress : null) ??
-    MOCK_WALLET) as `0x${string}`;
-  const isReady = isConnected || walletConnected || true; // mock-ready
-
   return {
-    address: effectiveAddress,
+    address: (address ?? null) as `0x${string}` | null,
     realConnected: isConnected,
-    isConnected: isReady,
+    isConnected,
     status,
     chainId,
     connector,

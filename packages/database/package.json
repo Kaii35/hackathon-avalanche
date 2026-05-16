@@ -2,30 +2,33 @@
   "name": "@hack/database",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "db:generate": "prisma generate",
-    "db:migrate:dev": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset --force",
+    "db:generate": "dotenv -e ../../.env -- prisma generate",
+    "db:migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
+    "db:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "db:studio": "dotenv -e ../../.env -- prisma studio",
+    "db:reset": "dotenv -e ../../.env -- prisma migrate reset --force",
+    "db:push": "dotenv -e ../../.env -- prisma db push",
     "type-check": "tsc --noEmit"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "@hack/shared": "workspace:*"
+    "@hack/shared": "workspace:*",
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
-    "prisma": "^5.22.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
     "bcryptjs": "^2.4.3",
-    "@types/bcryptjs": "^2.4.6"
+    "dotenv-cli": "^11.0.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LoginSchema, type LoginDto } from '@hack/shared';
+import { useQueryClient } from '@tanstack/react-query';
+import { LoginSchema, type LoginDto, type SessionUser } from '@hack/shared';
 import {
   Button,
   Card,
@@ -16,24 +17,54 @@ import {
   Label,
   Separator,
 } from '@hack/ui';
-import { Wallet } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/client/api';
+import { SESSION_KEY } from '@/lib/client/queries/session';
+
+function landingFor(role: SessionUser['role']): string {
+  if (role === 'admin') return '/admin';
+  if (role === 'issuer') return '/issuer';
+  return '/investor';
+}
 
 export default function LoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginDto>({
     resolver: zodResolver(LoginSchema),
-    defaultValues: { email: 'demo@arkangeles.test', password: 'demoaccount' },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (data: LoginDto) => {
-    await new Promise((r) => setTimeout(r, 600));
-    toast.success(`Bienvenido, ${data.email.split('@')[0]}.`);
-    router.push('/investor');
+    try {
+      const res = await api.call<{ user: SessionUser }>('/api/auth/login', {
+        method: 'POST',
+        body: data,
+      });
+      queryClient.setQueryData(SESSION_KEY, res.user);
+      await queryClient.invalidateQueries({ queryKey: SESSION_KEY });
+      toast.success(`Bienvenido, ${res.user.displayName}`);
+      router.push(landingFor(res.user.role));
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          toast.error('Credenciales inválidas. Verifica tu email y contraseña.');
+        } else if (err.status === 429) {
+          toast.error('Demasiados intentos. Espera un minuto e intenta de nuevo.');
+        } else if (err.status === 400) {
+          toast.error('Datos inválidos. Revisa el formato del email.');
+        } else {
+          toast.error('No pudimos iniciar sesión. Intenta de nuevo.');
+        }
+      } else {
+        toast.error('Error de red. Verifica tu conexión.');
+      }
+    }
   };
 
   return (
@@ -52,6 +83,7 @@ export default function LoginPage() {
               id="email"
               type="email"
               autoComplete="email"
+              placeholder="tu@arkangeles.mx"
               invalid={Boolean(errors.email)}
               {...register('email')}
             />
@@ -87,10 +119,21 @@ export default function LoginPage() {
           <Separator className="flex-1" />o<Separator className="flex-1" />
         </div>
 
-        <Button variant="secondary" className="w-full">
-          <Wallet className="h-4 w-4" />
-          Conectar wallet
-        </Button>
+        <div className="flex justify-center [&_button]:w-full">
+          <ConnectButton.Custom>
+            {({ openConnectModal, account, openAccountModal, mounted }) => (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={account ? openAccountModal : openConnectModal}
+                disabled={!mounted}
+              >
+                {account ? `Conectado: ${account.displayName}` : 'Conectar wallet'}
+              </Button>
+            )}
+          </ConnectButton.Custom>
+        </div>
 
         <p className="mt-6 text-center text-sm text-foreground-secondary">
           ¿Aún no tienes cuenta?{' '}

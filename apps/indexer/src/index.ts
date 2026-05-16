@@ -1,6 +1,10 @@
 import type Redis from 'ioredis';
-import { CHAIN_EVENTS_STREAM, type ChainEvent } from '@hack/sdk';
+import type { ChainEvent } from '@hack/sdk';
 import { prisma } from '@hack/database';
+
+// Mirror of CHAIN_EVENTS_STREAM in @hack/sdk/events/bus.
+// Inlined to avoid tsx ESM resolution issues with deep barrel re-exports.
+const CHAIN_EVENTS_STREAM = 'mock-chain-events';
 import { logger } from './logger.js';
 import { createRedis } from './redis.js';
 import { dispatch } from './handlers/index.js';

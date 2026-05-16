@@ -52,11 +52,22 @@ const sections = [
   },
 ];
 
+function homeForPath(path: string): string {
+  if (path.startsWith('/issuer')) return '/issuer';
+  if (path.startsWith('/admin')) return '/admin';
+  return '/investor';
+}
+
 export function MobileNav() {
   const path = usePathname() ?? '/';
+  const home = homeForPath(path);
   return (
     <nav className="flex h-full flex-col p-4">
-      <Link href="/" className="mb-6 flex items-center gap-2">
+      <Link
+        href={home}
+        className="mb-6 flex items-center gap-2"
+        aria-label="Ir al inicio del portal"
+      >
         <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-brand text-xs font-bold text-white">
           ▲
         </span>

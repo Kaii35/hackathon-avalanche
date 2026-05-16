@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { RegisterSchema, type RegisterDto } from '@hack/shared';
+import { useQueryClient } from '@tanstack/react-query';
+import { RegisterSchema, type RegisterDto, type SessionUser } from '@hack/shared';
 import {
   Button,
   Card,
@@ -18,6 +19,8 @@ import {
 } from '@hack/ui';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/client/api';
+import { SESSION_KEY } from '@/lib/client/queries/session';
 
 function passwordScore(pw: string) {
   let s = 0;
@@ -30,6 +33,7 @@ function passwordScore(pw: string) {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -37,7 +41,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterDto>({
     resolver: zodResolver(RegisterSchema),
-    defaultValues: { role: 'investor' },
+    defaultValues: { role: 'investor', firstName: '', lastName: '', email: '', password: '' },
   });
   const [accept, setAccept] = useState(false);
 
@@ -49,9 +53,28 @@ export default function RegisterPage() {
       toast.error('Debes aceptar los términos.');
       return;
     }
-    await new Promise((r) => setTimeout(r, 700));
-    toast.success(`Cuenta creada para ${data.email}`);
-    router.push('/onboarding');
+    try {
+      const res = await api.call<{ user: SessionUser }>('/api/auth/register', {
+        method: 'POST',
+        body: data,
+      });
+      queryClient.setQueryData(SESSION_KEY, res.user);
+      await queryClient.invalidateQueries({ queryKey: SESSION_KEY });
+      toast.success(`Cuenta creada. Bienvenido, ${res.user.displayName}`);
+      router.push('/onboarding');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          toast.error('Ya existe una cuenta con ese email.');
+        } else if (err.status === 400) {
+          toast.error('Datos inválidos. Revisa el formulario.');
+        } else {
+          toast.error('No pudimos crear tu cuenta. Intenta de nuevo.');
+        }
+      } else {
+        toast.error('Error de red. Verifica tu conexión.');
+      }
+    }
   };
 
   const strengthLabels = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Excelente'];
@@ -64,6 +87,38 @@ export default function RegisterPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName" required>
+                Nombre
+              </Label>
+              <Input
+                id="firstName"
+                autoComplete="given-name"
+                placeholder="María"
+                invalid={Boolean(errors.firstName)}
+                {...register('firstName')}
+              />
+              {errors.firstName && (
+                <p className="text-xs text-danger-fg">{errors.firstName.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName" required>
+                Apellido
+              </Label>
+              <Input
+                id="lastName"
+                autoComplete="family-name"
+                placeholder="López"
+                invalid={Boolean(errors.lastName)}
+                {...register('lastName')}
+              />
+              {errors.lastName && (
+                <p className="text-xs text-danger-fg">{errors.lastName.message}</p>
+              )}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="email" required>
               Correo electrónico
@@ -72,6 +127,7 @@ export default function RegisterPage() {
               id="email"
               type="email"
               autoComplete="email"
+              placeholder="tu@empresa.mx"
               invalid={Boolean(errors.email)}
               {...register('email')}
             />

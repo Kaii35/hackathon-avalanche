@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { useOnboardingStore } from '@/lib/client/stores/onboardingStore';
 import { useAccount } from 'wagmi';
-import { MOCK_WALLET } from '@/lib/client/mocks/portfolio';
 
 export default function WalletPage() {
   const router = useRouter();
@@ -32,10 +31,11 @@ export default function WalletPage() {
   const { address, isConnected } = useAccount();
   const [signing, setSigning] = useState(false);
 
-  const effectiveAddress = (address ?? walletAddress ?? MOCK_WALLET) as `0x${string}`;
+  const effectiveAddress = (address ?? walletAddress ?? null) as `0x${string}` | null;
   const linked = walletConnected;
 
   const simulateLink = async () => {
+    if (!effectiveAddress) return;
     setSigning(true);
     await new Promise((r) => setTimeout(r, 1300));
     patch({ walletConnected: true, walletAddress: effectiveAddress });
@@ -60,7 +60,7 @@ export default function WalletPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Wallet detectada</p>
-                {isConnected || walletConnected ? (
+                {(isConnected || walletConnected) && effectiveAddress ? (
                   <WalletAddress address={effectiveAddress} className="mt-1" />
                 ) : (
                   <p className="mt-0.5 text-xs text-foreground-tertiary">

@@ -1,151 +1,62 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import {
-  Badge,
-  DataTable,
-  Input,
-  PageHeader,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  WalletAddress,
-} from '@hack/ui';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Search } from 'lucide-react';
-import { useMyTrades } from '@/lib/client/queries/portfolio';
-import type { MockTrade } from '@/lib/client/mocks/trades';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-
-const columns: ColumnDef<MockTrade>[] = [
-  {
-    header: 'Oferta',
-    accessorKey: 'offeringName',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <span className="font-medium">{row.original.offeringName}</span>
-        <Badge variant="outline" size="sm">
-          {row.original.symbol}
-        </Badge>
-      </div>
-    ),
-  },
-  {
-    header: 'Lado',
-    accessorKey: 'side',
-    cell: ({ row }) => (
-      <Badge variant={row.original.side === 'buy' ? 'success' : 'danger'} size="sm">
-        {row.original.side === 'buy' ? 'Compra' : 'Venta'}
-      </Badge>
-    ),
-  },
-  {
-    header: 'Cantidad',
-    accessorKey: 'qty',
-    cell: ({ row }) => (
-      <span className="tabular">{Number(row.original.qty).toLocaleString('es-MX')}</span>
-    ),
-  },
-  {
-    header: 'Precio',
-    accessorKey: 'price',
-    cell: ({ row }) => <span className="tabular">{row.original.price}</span>,
-  },
-  {
-    header: 'Total',
-    accessorKey: 'total',
-    cell: ({ row }) => (
-      <span className="tabular">
-        {Number(row.original.total).toLocaleString('es-MX', { maximumFractionDigits: 2 })}
-      </span>
-    ),
-  },
-  {
-    header: 'Contraparte',
-    accessorKey: 'counterparty',
-    cell: ({ row }) => <WalletAddress address={row.original.counterparty} size="sm" />,
-  },
-  {
-    header: 'Tx',
-    accessorKey: 'txHash',
-    cell: ({ row }) => (
-      <a
-        href={`https://testnet.snowtrace.io/tx/${row.original.txHash}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-mono text-xs text-brand-400 hover:text-brand-300"
-      >
-        {row.original.txHash.slice(0, 10)}…
-      </a>
-    ),
-  },
-  {
-    header: 'Cuándo',
-    accessorKey: 'settledAt',
-    cell: ({ row }) => (
-      <span className="text-xs text-foreground-tertiary tabular">
-        {format(new Date(row.original.settledAt), 'd MMM yyyy HH:mm', { locale: es })}
-      </span>
-    ),
-  },
-];
+import { Badge, EmptyState, PageHeader } from '@hack/ui';
+import { Sparkles } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
+import { ConnectWalletPrompt } from '@/components/wallet/ConnectWalletPrompt';
+import { FujiActivityTable } from '@/components/wallet/FujiActivityTable';
 
 export default function TradesPage() {
-  const { data, isLoading } = useMyTrades();
-  const [search, setSearch] = useState('');
-  const [symbol, setSymbol] = useState('all');
+  const { address, realConnected } = useWallet();
 
-  const filtered = useMemo(() => {
-    let list = data ?? [];
-    if (symbol !== 'all') list = list.filter((t) => t.symbol === symbol);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (t) => t.offeringName.toLowerCase().includes(q) || t.txHash.toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [data, search, symbol]);
-
-  const symbols = Array.from(new Set((data ?? []).map((t) => t.symbol)));
+  if (!realConnected || !address) {
+    return (
+      <>
+        <PageHeader
+          title="Mis trades"
+          description="Conecta tu wallet para ver los trades reales asociados a tu dirección."
+        />
+        <ConnectWalletPrompt
+          title="Conecta tu wallet para ver tus trades"
+          description="El historial de trades se asocia a la wallet que firmó cada operación. Conecta una para verlos."
+        />
+      </>
+    );
+  }
 
   return (
     <>
-      <PageHeader title="Mis trades" description="Historial completo de operaciones liquidadas." />
-      <DataTable
-        columns={columns}
-        data={filtered}
-        isLoading={isLoading}
-        toolbar={
-          <>
-            <div className="relative w-64">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-tertiary" />
-              <Input
-                placeholder="Buscar oferta o tx…"
-                className="h-8 pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Select value={symbol} onValueChange={setSymbol}>
-              <SelectTrigger className="h-8 w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los símbolos</SelectItem>
-                {symbols.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
+      <PageHeader
+        title="Mis trades"
+        description="Trades reales asociados a tu wallet. No mostramos datos de demostración."
+        meta={
+          <Badge variant="outline" className="font-mono text-2xs">
+            {address.slice(0, 6)}…{address.slice(-4)}
+          </Badge>
         }
       />
+
+      {/* Sección 1: trades IFC (todavía no existen) */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">Trades IFC</h2>
+        <EmptyState
+          icon={<Sparkles className="h-5 w-5" />}
+          title="Aún no hay trades IFC para esta wallet"
+          description="Los trades de participaciones IFC aparecerán aquí cuando los smart contracts ERC-3643 estén deployados en Fuji y operes con ellos. Mientras tanto, mira tu actividad on-chain real abajo."
+        />
+      </section>
+
+      {/* Sección 2: actividad on-chain real */}
+      <section className="mt-8 space-y-2">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">
+          Actividad on-chain en Fuji
+        </h2>
+        <FujiActivityTable
+          wallet={address}
+          title="Tus transacciones reales en Avalanche Fuji"
+          helper="Datos en vivo del explorer público — AVAX y ERC-20 transfers. Click en cualquier tx para verla en Snowtrace."
+        />
+      </section>
     </>
   );
 }

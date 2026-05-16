@@ -1,4 +1,4 @@
-import { Prisma } from '@hack/database';
+import { Prisma } from '@prisma/client';
 import type { TransferEvent } from '@hack/sdk';
 import type { HandlerContext } from './index.js';
 

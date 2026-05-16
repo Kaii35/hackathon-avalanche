@@ -44,5 +44,26 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-export { Prisma };
-export * from '@prisma/client';
+// Explicit named re-exports — tsx ESM static analysis fails on `export *`
+// from CJS modules like @prisma/client.
+export { Prisma, PrismaClient } from '@prisma/client';
+export type {
+  User,
+  Identity,
+  Wallet,
+  Issuer,
+  Offering,
+  CapTableEntry,
+  Order,
+  Trade,
+  KycRecord,
+  AuditLog,
+  Notification,
+  ProcessedEvent,
+  Role,
+  KycStatus,
+  OfferingStatus,
+  OrderSide,
+  OrderStatus,
+  NotificationType,
+} from '@prisma/client';

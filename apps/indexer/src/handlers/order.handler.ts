@@ -1,5 +1,5 @@
 import type { OrderCancelledEvent, OrderFilledEvent, OrderPostedEvent } from '@hack/sdk';
-import { Prisma } from '@hack/database';
+import { Prisma } from '@prisma/client';
 import type { HandlerContext } from './index.js';
 
 type OrderEvent = OrderPostedEvent | OrderCancelledEvent | OrderFilledEvent;

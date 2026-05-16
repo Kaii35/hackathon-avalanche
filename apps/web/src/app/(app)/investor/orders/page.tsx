@@ -1,147 +1,62 @@
 'use client';
 
-import {
-  Badge,
-  Button,
-  DataTable,
-  EmptyState,
-  PageHeader,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@hack/ui';
-import { ListChecks, X } from 'lucide-react';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { OrderResponseDto } from '@hack/shared';
-import { useMyOrders, useCancelOrder } from '@/lib/client/queries/orderbook';
-import { useState } from 'react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { toast } from 'sonner';
-
-function makeColumns(onCancel: (id: string) => void): ColumnDef<OrderResponseDto>[] {
-  return [
-    {
-      header: 'Lado',
-      accessorKey: 'side',
-      cell: ({ row }) => (
-        <Badge variant={row.original.side === 'buy' ? 'success' : 'danger'} size="sm">
-          {row.original.side === 'buy' ? 'Compra' : 'Venta'}
-        </Badge>
-      ),
-    },
-    {
-      header: 'Cantidad',
-      accessorKey: 'qty',
-      cell: ({ row }) => (
-        <span className="tabular">
-          {Number(row.original.qty).toLocaleString('es-MX')}
-          <span className="ml-1 text-2xs text-foreground-tertiary">
-            ({Number(row.original.filledQty).toLocaleString('es-MX')} llenado)
-          </span>
-        </span>
-      ),
-    },
-    {
-      header: 'Precio',
-      accessorKey: 'price',
-      cell: ({ row }) => <span className="tabular">{row.original.price}</span>,
-    },
-    {
-      header: 'Total',
-      cell: ({ row }) => (
-        <span className="tabular">
-          {(Number(row.original.qty) * Number(row.original.price)).toLocaleString('es-MX', {
-            maximumFractionDigits: 2,
-          })}
-        </span>
-      ),
-    },
-    {
-      header: 'Estado',
-      accessorKey: 'status',
-      cell: ({ row }) => {
-        const s = row.original.status;
-        const variant =
-          s === 'open' || s === 'partial'
-            ? 'info'
-            : s === 'filled'
-              ? 'success'
-              : s === 'cancelled'
-                ? 'neutral'
-                : 'warning';
-        return (
-          <Badge variant={variant as 'info' | 'success' | 'neutral' | 'warning'} size="sm">
-            {s}
-          </Badge>
-        );
-      },
-    },
-    {
-      header: 'Vence',
-      accessorKey: 'expiresAt',
-      cell: ({ row }) => (
-        <span className="text-xs text-foreground-tertiary tabular">
-          {format(new Date(row.original.expiresAt), 'd MMM HH:mm', { locale: es })}
-        </span>
-      ),
-    },
-    {
-      header: '',
-      id: 'actions',
-      cell: ({ row }) =>
-        row.original.status === 'open' || row.original.status === 'partial' ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onCancel(row.original.id)}
-            aria-label="Cancelar orden"
-          >
-            <X />
-          </Button>
-        ) : null,
-    },
-  ];
-}
+import { Badge, EmptyState, PageHeader } from '@hack/ui';
+import { ListChecks } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
+import { ConnectWalletPrompt } from '@/components/wallet/ConnectWalletPrompt';
+import { FujiActivityTable } from '@/components/wallet/FujiActivityTable';
 
 export default function MyOrdersPage() {
-  const [tab, setTab] = useState<'open' | 'filled' | 'all'>('open');
-  const { data: orders, isLoading } = useMyOrders(tab);
-  const cancel = useCancelOrder();
+  const { address, realConnected } = useWallet();
 
-  const onCancel = async (id: string) => {
-    await cancel.mutateAsync(id);
-    toast.success('Orden cancelada');
-  };
-
-  const columns = makeColumns(onCancel);
-  const filtered = orders ?? [];
+  if (!realConnected || !address) {
+    return (
+      <>
+        <PageHeader
+          title="Mis órdenes"
+          description="Conecta tu wallet para ver las órdenes reales asociadas a tu dirección."
+        />
+        <ConnectWalletPrompt
+          title="Conecta tu wallet para ver tus órdenes"
+          description="Las órdenes IFC viven asociadas a una wallet. Conecta una y sólo verás las tuyas."
+        />
+      </>
+    );
+  }
 
   return (
     <>
       <PageHeader
         title="Mis órdenes"
-        description="Tus órdenes activas, parciales, llenadas y canceladas."
+        description="Órdenes reales asociadas a tu wallet. No mostramos datos de demostración."
+        meta={
+          <Badge variant="outline" className="font-mono text-2xs">
+            {address.slice(0, 6)}…{address.slice(-4)}
+          </Badge>
+        }
       />
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'open' | 'filled' | 'all')}>
-        <TabsList>
-          <TabsTrigger value="open">Activas</TabsTrigger>
-          <TabsTrigger value="filled">Filleadas</TabsTrigger>
-          <TabsTrigger value="all">Todas</TabsTrigger>
-        </TabsList>
-        <TabsContent value={tab}>
-          {filtered.length === 0 && !isLoading ? (
-            <EmptyState
-              icon={<ListChecks className="h-5 w-5" />}
-              title="No hay órdenes en este filtro"
-              description="Cuando crees una orden firmada aparecerá aquí."
-            />
-          ) : (
-            <DataTable columns={columns} data={filtered} isLoading={isLoading} />
-          )}
-        </TabsContent>
-      </Tabs>
+
+      {/* Sección 1: órdenes IFC (todavía no existen) */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">Órdenes IFC</h2>
+        <EmptyState
+          icon={<ListChecks className="h-5 w-5" />}
+          title="Aún no hay órdenes IFC para esta wallet"
+          description="Las órdenes EIP-712 firmadas aparecerán aquí cuando los smart contracts ERC-3643 estén deployados y crees una orden en el orderbook. Mientras tanto, mira tu actividad on-chain real abajo."
+        />
+      </section>
+
+      {/* Sección 2: actividad on-chain real */}
+      <section className="mt-8 space-y-2">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">
+          Actividad on-chain en Fuji
+        </h2>
+        <FujiActivityTable
+          wallet={address}
+          title="Tus transacciones reales en Avalanche Fuji"
+          helper="Datos en vivo del explorer público. Cuando crees y ejecutes órdenes IFC, aparecerán aquí también."
+        />
+      </section>
     </>
   );
 }

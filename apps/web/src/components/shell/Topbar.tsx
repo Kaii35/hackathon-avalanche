@@ -21,12 +21,24 @@ import {
 } from '@hack/ui';
 import { useUiStore } from '@/lib/client/stores/uiStore';
 import { useWallet } from '@/hooks/useWallet';
+import { useSession, useLogout } from '@/lib/client/queries/session';
 import { MobileNav } from './MobileNav';
 
 export function Topbar() {
   const setCommand = useUiStore((s) => s.setCommandOpen);
   const router = useRouter();
-  const { address } = useWallet();
+  const { address, realConnected } = useWallet();
+  const { data: session, isLoading } = useSession();
+  const logout = useLogout();
+
+  const displayName = session?.displayName ?? (isLoading ? 'Cargando…' : 'Invitado');
+  const initials = session?.initials ?? '··';
+  const email = session?.email ?? '';
+
+  const onLogout = async () => {
+    await logout.mutateAsync();
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-border-subtle bg-canvas/80 px-4 backdrop-blur-md md:px-6">
@@ -66,8 +78,12 @@ export function Topbar() {
 
       <div className="ml-auto flex items-center gap-2">
         <Badge variant="outline" className="hidden md:inline-flex">
-          <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-          Mainnet · Fuji
+          <span
+            className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${
+              realConnected ? 'bg-success animate-pulse' : 'bg-foreground-tertiary'
+            }`}
+          />
+          Avalanche · Fuji
         </Badge>
 
         <DropdownMenu>
@@ -84,21 +100,9 @@ export function Topbar() {
             <DropdownMenuSeparator />
             <div className="max-h-72 overflow-y-auto py-1">
               <DropdownMenuItem className="flex flex-col items-start gap-0.5">
-                <span className="text-sm font-medium">Orden ejecutada</span>
+                <span className="text-sm font-medium">Bienvenido a la plataforma</span>
                 <span className="text-xs text-foreground-tertiary">
-                  500 AKAPYM @ 102.40 USDC · hace 1 h
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-0.5">
-                <span className="text-sm font-medium">Nueva oferta</span>
-                <span className="text-xs text-foreground-tertiary">
-                  Hub Logístico Manzanillo · MARZNLO
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-0.5">
-                <span className="text-sm font-medium">KYC verificado</span>
-                <span className="text-xs text-foreground-tertiary">
-                  Tu identidad fue verificada por Arkangeles
+                  Completa tu KYC para empezar a operar.
                 </span>
               </DropdownMenuItem>
             </div>
@@ -109,9 +113,11 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="hidden items-center rounded-md border border-border-subtle bg-surface px-2 py-1 sm:flex">
-          <WalletAddress address={address} size="sm" />
-        </div>
+        {realConnected && address && (
+          <div className="hidden items-center rounded-md border border-border-subtle bg-surface px-2 py-1 sm:flex">
+            <WalletAddress address={address} size="sm" />
+          </div>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -120,20 +126,24 @@ export function Topbar() {
               aria-label="Menú de usuario"
             >
               <Avatar className="h-8 w-8">
-                <AvatarFallback>AS</AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <ChevronDown className="hidden h-3.5 w-3.5 text-foreground-tertiary md:block" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
             <div className="px-2 py-2">
-              <p className="text-sm font-medium text-foreground">Alejandro Soto</p>
-              <p className="text-xs text-foreground-tertiary">alejosotodiaz@gmail.com</p>
+              <p className="text-sm font-medium text-foreground">{displayName}</p>
+              {email && (
+                <p className="truncate text-xs text-foreground-tertiary" title={email}>
+                  {email}
+                </p>
+              )}
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/investor">
-                <User2 className="h-4 w-4" /> Mi cuenta
+              <Link href="/investor/profile">
+                <User2 className="h-4 w-4" /> Mi perfil
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
@@ -141,10 +151,9 @@ export function Topbar() {
               Configuración
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/login">
-                <LogOut className="h-4 w-4" /> Cerrar sesión
-              </Link>
+            <DropdownMenuItem onClick={onLogout} disabled={logout.isPending}>
+              <LogOut className="h-4 w-4" />
+              {logout.isPending ? 'Cerrando…' : 'Cerrar sesión'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

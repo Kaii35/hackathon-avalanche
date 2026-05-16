@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { apiOrMock } from '../api';
 import { queryKeys } from './keys';
-import { makeOrderbook, MOCK_OPEN_ORDERS, MOCK_FILLED_ORDERS } from '../mocks/orders';
+import { makeOrderbook, getMockOpenOrders, getMockFilledOrders } from '../mocks/orders';
 import { MOCK_OFFERINGS } from '../mocks/offerings';
 import type { OrderbookResponseDto, OrderResponseDto } from '@hack/shared';
 
@@ -39,15 +39,21 @@ export function useOrderbook(offeringId: string | undefined) {
   return query;
 }
 
-export function useMyOrders(status: 'open' | 'filled' | 'all' = 'all') {
+/**
+ * "My orders" is wallet-scoped. Disabled when no wallet is connected so the
+ * dashboard doesn't show fake orders for a logged-in user without a wallet.
+ */
+export function useMyOrders(wallet: string | undefined, status: 'open' | 'filled' | 'all' = 'all') {
   return useQuery({
-    queryKey: queryKeys.orders.mine(status),
+    queryKey: queryKeys.orders.mine(wallet ?? 'none', status),
     queryFn: () =>
       apiOrMock<OrderResponseDto[]>(`/api/orders/mine?status=${status}`, () => {
-        if (status === 'open') return MOCK_OPEN_ORDERS;
-        if (status === 'filled') return MOCK_FILLED_ORDERS;
-        return [...MOCK_OPEN_ORDERS, ...MOCK_FILLED_ORDERS];
+        const w = wallet as string;
+        if (status === 'open') return getMockOpenOrders(w);
+        if (status === 'filled') return getMockFilledOrders(w);
+        return [...getMockOpenOrders(w), ...getMockFilledOrders(w)];
       }),
+    enabled: Boolean(wallet),
   });
 }
 
@@ -85,7 +91,7 @@ export function useCreateOrder() {
     },
     onSuccess: (_, variables) => {
       void qc.invalidateQueries({ queryKey: queryKeys.orders.book(variables.offeringId) });
-      void qc.invalidateQueries({ queryKey: queryKeys.orders.mine() });
+      void qc.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
   });
 }

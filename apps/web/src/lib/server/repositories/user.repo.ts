@@ -25,9 +25,17 @@ export const userRepo = {
     email: string;
     passwordHash: string;
     role: 'investor' | 'issuer' | 'admin';
+    firstName: string;
+    lastName: string;
   }) {
     return prisma.user.create({
-      data: { email: data.email.toLowerCase(), passwordHash: data.passwordHash, role: data.role },
+      data: {
+        email: data.email.toLowerCase(),
+        passwordHash: data.passwordHash,
+        role: data.role,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      },
     });
   },
 
