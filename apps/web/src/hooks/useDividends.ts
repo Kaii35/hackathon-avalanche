@@ -185,11 +185,20 @@ export function useClaimableDividends(holder: Address | undefined) {
 /**
  * Returns the total USDC claimable (not yet claimed) across all dividends for a given holder.
  * Suitable for the dashboard banner.
+ *
+ * Return type is `unknown` for the wagmi spread fields to avoid TS2742
+ * (wagmi internal type identifiers are not portable across module paths).
+ * Consumers only need `.data`; the rest is opaque metadata.
  */
-export function useTotalClaimable(holder: Address | undefined) {
-  const { data: claimable, ...rest } = useClaimableDividends(holder);
+export function useTotalClaimable(holder: Address | undefined): {
+  data: bigint;
+  isLoading: boolean;
+  isError: boolean;
+  refetch?: () => unknown;
+} {
+  const { data: claimable, isLoading, isError, refetch } = useClaimableDividends(holder);
 
   const total = claimable?.reduce((acc, c) => (c.claimed ? acc : acc + c.amount), 0n) ?? 0n;
 
-  return { data: total, ...rest };
+  return { data: total, isLoading, isError, refetch };
 }

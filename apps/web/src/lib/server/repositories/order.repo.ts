@@ -16,6 +16,16 @@ export const orderRepo = {
     });
   },
 
+  async findByMaker(makerWallet: string, status: 'open' | 'filled' | 'all') {
+    const where: Prisma.OrderWhereInput = { makerWallet };
+    if (status === 'open') where.status = { in: ['open', 'partial'] };
+    if (status === 'filled') where.status = 'filled';
+    return prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+  },
+
   async cancelByMaker(id: string, makerWallet: string) {
     return prisma.order.updateMany({
       where: { id, makerWallet, status: { in: ['open', 'partial'] } },

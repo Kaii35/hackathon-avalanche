@@ -18,6 +18,8 @@ import Link from 'next/link';
 import { AllocationDonut } from '@/components/charts/AllocationDonut';
 import { usePortfolio } from '@/lib/client/queries/portfolio';
 import { useOfferings } from '@/lib/client/queries/offerings';
+import { useWallet } from '@/hooks/useWallet';
+import { ConnectWalletPrompt } from '@/components/wallet/ConnectWalletPrompt';
 
 interface Row {
   offeringId: string;
@@ -83,8 +85,25 @@ const columns: ColumnDef<Row>[] = [
 ];
 
 export default function PortfolioPage() {
-  const { data: portfolio } = usePortfolio();
+  const { address, realConnected } = useWallet();
+  const wallet = address ?? undefined;
+  const { data: portfolio, isLoading } = usePortfolio(wallet);
   const { data: offerings } = useOfferings();
+
+  if (!realConnected || !wallet) {
+    return (
+      <>
+        <PageHeader
+          title="Portafolio"
+          description="Conecta tu wallet para ver tus participaciones reales en Avalanche Fuji."
+        />
+        <ConnectWalletPrompt
+          title="Conecta tu wallet para ver tu portafolio"
+          description="Tus posiciones se calculan en tiempo real leyendo los smart contracts ERC-3643."
+        />
+      </>
+    );
+  }
 
   const total = Number(portfolio?.totalMarketValue ?? 0);
   const positions = portfolio?.positions ?? [];
@@ -109,8 +128,10 @@ export default function PortfolioPage() {
 
   const allocation = rows.map((r) => ({ label: r.symbol, value: Number(r.marketValue) }));
 
-  const realizedPnL = 84320;
-  const unrealizedPnL = 142180;
+  // PnL real: hoy no llevamos cost basis por holder. Mientras se cablea el
+  // indexer + un servicio de trade history per-holder, evitamos mostrar
+  // números inventados que confundirían al cliente.
+  const hasPositions = positions.length > 0;
 
   return (
     <>
@@ -128,28 +149,28 @@ export default function PortfolioPage() {
       <MetricGrid>
         <StatCard
           label="Valor de mercado"
-          value={`$${total.toLocaleString('es-MX', { maximumFractionDigits: 0 })}`}
-          helper="MXN equivalente"
+          value={
+            isLoading ? '—' : `$${total.toLocaleString('es-MX', { maximumFractionDigits: 2 })}`
+          }
+          helper="USDC, leído on-chain"
           icon={<Briefcase className="h-4 w-4" />}
         />
         <StatCard
           label="Posiciones"
           value={positions.length}
-          helper="Diversificadas"
+          helper={hasPositions ? 'En tu wallet' : 'Sin posiciones todavía'}
           icon={<Coins className="h-4 w-4" />}
         />
         <StatCard
           label="PnL realizado"
-          value={`+$${realizedPnL.toLocaleString('es-MX')}`}
-          delta={4.2}
-          deltaLabel="trimestre"
+          value={hasPositions ? '—' : '$0'}
+          helper={hasPositions ? 'Pendiente: historial de cost basis' : 'Sin movimientos'}
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <StatCard
           label="PnL no realizado"
-          value={`+$${unrealizedPnL.toLocaleString('es-MX')}`}
-          delta={2.6}
-          deltaLabel="vs. costo"
+          value={hasPositions ? '—' : '$0'}
+          helper={hasPositions ? 'Pendiente: historial de cost basis' : 'Sin movimientos'}
         />
       </MetricGrid>
 

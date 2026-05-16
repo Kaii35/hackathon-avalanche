@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { WagmiProvider } from 'wagmi';
+import { WagmiProvider, type State } from 'wagmi';
 import { RainbowKitProvider, darkTheme, lightTheme, type Theme } from '@rainbow-me/rainbowkit';
 import { useTheme } from 'next-themes';
 import '@rainbow-me/rainbowkit/styles.css';
@@ -124,7 +124,13 @@ const appInfo = {
   ),
 };
 
-export function Web3Provider({ children }: { children: ReactNode }) {
+export function Web3Provider({
+  children,
+  initialState,
+}: {
+  children: ReactNode;
+  initialState?: State | undefined;
+}) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -133,7 +139,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const rkTheme = mounted && resolvedTheme === 'light' ? light : dark;
 
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig} initialState={initialState}>
       <RainbowKitProvider
         appInfo={appInfo}
         theme={rkTheme}

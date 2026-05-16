@@ -48,7 +48,9 @@ function buildConfig(): Config {
       projectId: projectId as string,
       chains: [avalancheFuji],
       transports,
-      ssr: true,
+      // ssr: false keeps wagmi client-side only with localStorage persistence.
+      // Avoids the SSR cookie-rehydration dance that was disconnecting users.
+      ssr: false,
       wallets: [avalancheGroup, popularGroup],
     });
   }
@@ -70,7 +72,11 @@ function buildConfig(): Config {
     chains: [avalancheFuji],
     transports,
     connectors,
-    ssr: true,
+    // ssr: false → wagmi runs client-side only with localStorage persistence.
+    // Trade-off: brief flash of "disconnected" on first render before wagmi
+    // hydrates from localStorage. Acceptable for dev/demo; simpler than the
+    // cookie-rehydration SSR dance.
+    ssr: false,
   });
 }
 
