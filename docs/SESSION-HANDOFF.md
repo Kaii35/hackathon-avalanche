@@ -1,9 +1,10 @@
 # SESSION HANDOFF — Mercado Secundario IFC sobre Avalanche
 
-> **Generado:** 2026-05-16 al final de la sesión.
+> **Generado:** 2026-05-16 al final de la primera sesión.
+> **Actualizado:** 2026-05-16 (sesión 2 — Sumsub real, wallet linking real, admin investor view real, landing polish, build verde).
 > **Para retomar:** pega este documento entero al inicio de un nuevo chat de Claude Code, o usa el "READY-TO-PASTE CONTINUATION PROMPT" del final.
 > **Repo:** https://github.com/Kaii35/hackathon-avalanche
-> **Branch:** `main` (working tree limpio; commits `f77586d` y `7f5652d` ya pushed).
+> **Branch:** `main` (working tree limpio; último commit `6173f08` pushed — Sumsub KYC + wallet linking + admin investors + landing polish).
 
 ---
 
@@ -34,31 +35,43 @@ Resolver iliquidez del inversionista IFC (hoy 5–10 años atrapado sin poder ve
 - 141 tests Foundry, 8 suites, 100% verde, 16ms
 - Demo flow end-to-end ejecutado on-chain (9 TXs verificables en Snowtrace)
 - Auth real (login/register/logout/session/profile) con bcrypt + JWT httpOnly
+- **Registro con confirmar contraseña** (cross-field Zod refine)
 - DB schema migrada (Supabase) + seed
 - Mock blockchain SDK + indexer event-driven (backend sigue en mock para orderbook/matching)
-- 22 endpoints API con validación + RBAC + rate limiting
+- 22+ endpoints API con validación + RBAC + rate limiting
 - Wallet integration (Core priorizada, MetaMask, Coinbase, Rabby, Injected)
+- Modal RainbowKit con tema brand-tinted (radii, shadows, group labels, brand glow)
 - Frontend reads live de Fuji vía wagmi (`useKycStatus`, `useTokenHolding`, `OnChainStatusCard`)
 - ~30 páginas frontend
 - Light/dark theme, hero animado (GSAP), loading screen (Three.js)
+- **Logout con shader farewell + redirect a landing** (4s hold, mirrors login UX)
 
-**Mock/placeholder (UI ok, sin lógica real on-chain todavía):**
+**Real on-chain integrations (sesión 2):**
 
-- Holdings IFC en dashboard (derivados de wallet, no son los tokens reales todavía — solo el demo ARKDEMO sí es real)
+- **Sumsub KYC sandbox integrado end-to-end**: token endpoint, polling endpoint, webhook endpoint (HMAC SHA256/SHA512/SHA1), WebSDK widget en `/onboarding/kyc`
+- **Real SIWE-like wallet linking**: `POST /api/users/me/wallet` con verificación de firma (recoverMessageAddress de viem), case-insensitive matching, anti-replay con `Issued At` timestamp ±10 min
+- **On-chain `IdentityRegistry.verifyAddress` real**: `lib/server/chain/identityRegistry.ts` con viem directo a Fuji (bypassea el adapter avalanche del SDK que sigue tirando throw), idempotente (lee `isVerified` antes de escribir)
+- **Admin investor view con data real**: `GET /api/admin/investors` agrega User + primary Wallet + última Identity + último KycRecord + suma de notional de trades. Auto-reconcile de pending Sumsub records (batched 5x Promise.allSettled, throttle 15s in-process)
+- **Admin jurisdictions con globo 3D Cobe** (WebGL) en lugar del SVG estático
+
+**Mock/placeholder (UI ok, sin lógica real todavía):**
+
+- Holdings IFC en dashboard (derivados de wallet, no son los tokens reales — solo el demo ARKDEMO sí es real)
 - Orderbook animado (timer-based)
-- KYC provider (UI mock, sin Truora/Mati real)
 - Distribución de dividendos
-- Mapa de jurisdicciones
 
 **Pendiente:**
 
+- ~~KYC provider real~~ ✅ Sumsub sandbox integrado
+- ~~Real SIWE wallet linking~~ ✅
+- ~~Admin investor data real desde DB~~ ✅
 - Snowtrace contract verification
 - Adapter avalanche real en `packages/sdk` (reemplaza mock backend → matching on-chain)
 - Módulos compliance: `MaxInvestmentModule`, `ClaimIssuer`
 - Auditoría formal post-hackathon (Halborn/OZ)
-- KYC provider real
 - Workers BullMQ persistentes
 - WalletConnect mobile (necesita Reown project ID)
+- **Vercel deploy** para URL fija de webhook Sumsub (cloudflare quick tunnels son efímeras)
 - Pitch deck + video demo
 - AvaCloud subnet (producción)
 - Sandbox CNBV
@@ -130,9 +143,12 @@ Si CUALQUIER paso falla → revert completo, cero half-state.
 
 **Configuración crítica actual del .env:**
 
-- `CHAIN_MODE=mock` — backend SDK sigue en mock (su modo `avalanche` lanza throw, no implementado)
+- `CHAIN_MODE=avalanche` (cambiado por user post-HANDOFF v1) — **PERO** el adapter avalanche del SDK sigue tirando throw, así que las rutas que usan `chainClient.*` retornan 500 (`/api/offerings` por ejemplo). Mi código nuevo (Sumsub, on-chain verify) bypassea el SDK usando viem directo, así que funciona independiente.
 - `NEXT_PUBLIC_USE_MOCKS=false` — frontend prefiere APIs reales, fallback a mocks solo en 404/501
 - `NEXT_PUBLIC_*` contract addresses → live Fuji
+- **`SUMSUB_*` configurado** (sandbox): `SUMSUB_APP_TOKEN`, `SUMSUB_SECRET_KEY`, `SUMSUB_LEVEL_NAME=basic-kyc-level`, `SUMSUB_WEBHOOK_SECRET`. Credenciales reales están en `.env` (gitignored); `.env.example` tiene placeholders.
+
+> ⚠️ Si retomas y necesitas re-configurar Sumsub desde cero: ver sección 16 (Sumsub setup).
 
 ---
 
@@ -402,6 +418,87 @@ Todos en `packages/blockchain/src/` y `packages/blockchain/src/modules/`. Pragma
 - **Dependencias:** OZ `ERC20`
 - **⚠️ NUNCA deployar en mainnet** — mint público.
 
+## 4.B KYC / Identity stack (Sumsub + on-chain reconciliation) — sesión 2
+
+Reemplaza al KYC mock. Vive **off-chain** principalmente, con un trigger on-chain `IdentityRegistry.verifyAddress(wallet)` cuando KYC=verified Y wallet linked.
+
+### Componentes nuevos
+
+| Archivo                                                 | Responsabilidad                                                                                                                                                                                                                          |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/lib/server/services/sumsub.service.ts`    | Cliente Sumsub firmado (HMAC-SHA256 sobre `ts + METHOD + path?query + body`). Expone `ensureApplicant`, `generateAccessToken`, `verifyWebhook` (soporta SHA256/SHA512/SHA1)                                                              |
+| `apps/web/src/app/api/kyc/sumsub/token/route.ts`        | `POST` autenticado. Crea applicant (idempotente por userId), upserts `KycRecord` con `provider='sumsub'`, devuelve token WebSDK (~10 min TTL)                                                                                            |
+| `apps/web/src/app/api/kyc/sumsub/status/route.ts`       | `GET` autenticado. Polling para reconciliar. Si Sumsub devuelve `GREEN`, llama `chainVerifyAddress` + upserts `Identity` + audit log con tx hash                                                                                         |
+| `apps/web/src/app/api/kyc/sumsub/webhook/route.ts`      | `POST` público. Verifica HMAC del raw body con header `x-payload-digest`. Reconcilia `KycRecord` + `Identity` + on-chain. Maneja eventos `applicantReviewed`, `applicantPending`, `applicantOnHold`, `applicantCreated`                  |
+| `apps/web/src/lib/server/chain/identityRegistry.ts`     | Helper viem directo a `IdentityRegistry` en Fuji. **Bypassea el SDK avalanche roto.** Idempotente (lee `isVerified` antes de escribir). Falla silenciosa con `{skipped: true}` si faltan vars de entorno                                 |
+| `apps/web/src/app/(onboarding)/onboarding/kyc/page.tsx` | Reemplaza los fake uploaders por el WebSDK widget de Sumsub (`@sumsub/websdk-react`). Maneja 7 estados (idle/loading/ready/pending/verified/rejected/error), polling al status endpoint cada 4s en `pending`, theme-aware (`useTheme()`) |
+
+### Flujo end-to-end (cuando todo está en línea)
+
+```
+User en /onboarding/kyc
+    │
+    ├─ Click "Iniciar verificación"
+    │     ▼
+    ├─ POST /api/kyc/sumsub/token ──► Sumsub: ensureApplicant + accessToken (10 min)
+    │     ▲                          ◄── { token, applicantId }
+    │     │
+    │     └─ DB: KycRecord upsert {provider=sumsub, status=pending, externalId=applicantId}
+    │
+    ├─ <SumsubWebSdk accessToken={token} ...> monta iframe
+    │     │
+    │     User completa verificación (sandbox: cualquier docu test funciona)
+    │     │
+    │     │ events: idCheck.onApplicantSubmitted → state=pending
+    │     │
+    │     ▼
+    └─ Front polea /api/kyc/sumsub/status cada 4s
+              │
+              ▼
+       Sumsub fires webhook  ─────► POST /api/kyc/sumsub/webhook
+              │ (paralelo)                │
+              │                           ├─ Verify HMAC (rawBody, x-payload-digest)
+              │                           ├─ Update KycRecord.status
+              │                           ├─ If verified + wallet linked:
+              │                           │    ├─ chainVerifyAddress(wallet) → IdentityRegistry on Fuji
+              │                           │    └─ upsert Identity row
+              │                           └─ Audit log
+              │
+              ▼
+       /api/kyc/sumsub/status (polling)
+              │
+              ├─ Read applicant state from Sumsub
+              ├─ Mirror to DB (KycRecord, Identity)
+              └─ Return current status
+```
+
+### Reconciliación pasiva en admin
+
+Si el webhook NO llega (tunnel down, URL desactualizada, etc.), `GET /api/admin/investors` actúa como **safety net**:
+
+- Lista usuarios con `KycRecord.status='pending'` (provider=sumsub)
+- Por cada uno, fetch a Sumsub via `getApplicantByExternalId`
+- Si Sumsub dice GREEN/RED, actualiza DB + dispara on-chain
+- **Batched 5 en paralelo** (`Promise.allSettled`) para latencia baja
+- **Throttle 15s in-process** para no martillar Sumsub si admin recarga rápido
+
+Combinado con el polling del frontend, **el webhook es opcional** para que la app funcione. El webhook solo da real-time push; sin él, el sistema converge via polling.
+
+### Tipos de cuenta y wallets reales (sesión 2)
+
+| User                     | Role     | Wallet primaria                              | KYC status |
+| ------------------------ | -------- | -------------------------------------------- | ---------- |
+| `migue714.mg@gmail.com`  | admin    | `0xa24f1a1afb5ca441554633b750923e6e6eef7dd9` | pending    |
+| `josemg.714@hotmail.com` | investor | `0x5f5300...2abb`                            | pending    |
+| 5× seed `*.example.mx`   | investor | (random hex)                                 | verified   |
+
+## Webhook tunnel — estado actual
+
+- **Cloudflared instalado vía winget**: `C:/Users/USER/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_*/cloudflared.exe`
+- **Quick Tunnel** (efímero): `cloudflared tunnel --url http://localhost:3000` → URL random `*.trycloudflare.com`
+- **Limitación**: la URL cambia en cada reinicio del proceso → hay que actualizar el campo "Objetivo" en Sumsub
+- **Solución persistente recomendada para equipo** (no implementada aún): **deploy a Vercel** con URL fija `https://hackathon-avalanche-*.vercel.app/api/kyc/sumsub/webhook`. Steps detallados en sección 12 (próximos pasos).
+
 ## Contratos pendientes
 
 | Contrato              | Razón                                                                                        |
@@ -424,28 +521,56 @@ hackathon-avalanche/
 ├── .env.example                       # Template público
 ├── apps/
 │   ├── web/                           # Next.js 15 (App Router, Turbopack)
+│   │   ├── next.config.ts             # outputFileTracingRoot pinned a monorepo root (sesión 2)
 │   │   ├── src/
-│   │   │   ├── app/                   # Pages (route groups: (landing), (auth), (onboarding), (app))
-│   │   │   │   └── (app)/investor/page.tsx   # Modificado para inyectar OnChainStatusCard
+│   │   │   ├── app/
+│   │   │   │   ├── (app)/investor/page.tsx          # Inyecta OnChainStatusCard
+│   │   │   │   ├── (app)/admin/investors/page.tsx   # Data real (sesión 2)
+│   │   │   │   ├── (app)/admin/compliance/jurisdictions/page.tsx  # Globo 3D Cobe (sesión 2)
+│   │   │   │   ├── (auth)/register/page.tsx         # + Confirmar contraseña (sesión 2)
+│   │   │   │   ├── (onboarding)/onboarding/kyc/page.tsx    # SumsubWebSdk widget (sesión 2)
+│   │   │   │   ├── (onboarding)/onboarding/wallet/page.tsx # SIWE real (sesión 2)
+│   │   │   │   └── api/
+│   │   │   │       ├── admin/investors/route.ts     # NEW - data real + reconcile (sesión 2)
+│   │   │   │       └── kyc/sumsub/
+│   │   │   │           ├── token/route.ts           # NEW (sesión 2)
+│   │   │   │           ├── status/route.ts          # NEW (sesión 2)
+│   │   │   │           └── webhook/route.ts         # NEW HMAC-verified (sesión 2)
 │   │   │   ├── components/
-│   │   │   │   ├── dashboard/OnChainStatusCard.tsx  # NEW - live Fuji reads
-│   │   │   │   └── wallet/ConnectWalletPrompt.tsx   # Gating si no hay wallet
+│   │   │   │   ├── dashboard/OnChainStatusCard.tsx
+│   │   │   │   ├── landing/
+│   │   │   │   │   ├── Compliance.tsx               # Bento grid (sesión 2)
+│   │   │   │   │   ├── CtaBackgroundPaths.tsx       # NEW animated CTA (sesión 2)
+│   │   │   │   │   └── HowItWorks.tsx               # ASCII ellipsis fix (sesión 2)
+│   │   │   │   ├── loading/DashboardLoadingScreen.tsx  # + footnote/ariaLabel props (sesión 2)
+│   │   │   │   ├── shell/Sidebar.tsx                # Longest-prefix-wins + optimistic (sesión 2)
+│   │   │   │   ├── shell/Topbar.tsx                 # Logout shader + mounted gate (sesión 2)
+│   │   │   │   ├── ui/cobe-globe-cdn.tsx            # NEW 3D globe theme-aware (sesión 2)
+│   │   │   │   └── wallet/ConnectWalletPrompt.tsx
 │   │   │   ├── hooks/
-│   │   │   │   ├── useKycStatus.ts    # NEW - IdentityRegistry.isVerified
-│   │   │   │   ├── useTokenHolding.ts # NEW - balanceOf + symbol + decimals paralelo
-│   │   │   │   ├── useWallet.ts       # wagmi wrapper
-│   │   │   │   ├── useWalletBalances.ts  # AVAX + USDC reales
-│   │   │   │   └── useFujiActivity.ts # Routescan API
+│   │   │   │   ├── useKycStatus.ts
+│   │   │   │   ├── useTokenHolding.ts
+│   │   │   │   ├── useWallet.ts
+│   │   │   │   ├── useWalletBalances.ts
+│   │   │   │   └── useFujiActivity.ts
 │   │   │   ├── lib/
 │   │   │   │   ├── client/
-│   │   │   │   │   ├── contracts.ts   # NEW - addresses + ABIs minimales
-│   │   │   │   │   ├── api.ts         # apiOrMock pattern
-│   │   │   │   │   └── wagmi.ts       # explorerAddress() + wagmi config
+│   │   │   │   │   ├── contracts.ts
+│   │   │   │   │   ├── api.ts
+│   │   │   │   │   ├── wagmi.ts
+│   │   │   │   │   ├── mocks/admin.ts               # MockInvestor.wallet ahora nullable (sesión 2)
+│   │   │   │   │   └── queries/admin.ts             # Handles wrapped audit-log response (sesión 2)
 │   │   │   │   └── server/
-│   │   │   │       ├── chain/client.ts  # IfcMarketClient (mock mode)
-│   │   │   │       └── services/order.service.ts  # Matching engine (mock)
-│   │   │   └── providers/Web3Provider.tsx
-│   │   └── package.json
+│   │   │   │       ├── chain/
+│   │   │   │       │   ├── client.ts                # IfcMarketClient (mock)
+│   │   │   │       │   └── identityRegistry.ts      # NEW viem direct caller (sesión 2)
+│   │   │   │       ├── middleware/withErrorHandler.ts  # AnyCtx fix (sesión 2)
+│   │   │   │       └── services/
+│   │   │   │           ├── auth.service.ts          # linkWallet case-insensitive fix (sesión 2)
+│   │   │   │           ├── order.service.ts
+│   │   │   │           └── sumsub.service.ts        # NEW signed API client (sesión 2)
+│   │   │   └── providers/Web3Provider.tsx           # RainbowKit theme overrides (sesión 2)
+│   │   └── package.json                             # + @sumsub/websdk-react, cobe (sesión 2)
 │   └── indexer/                       # Worker Node.js (event-driven, ESM)
 │       └── package.json               # MODIFIED: dotenv-cli prefix on dev/start
 ├── packages/
@@ -522,15 +647,17 @@ hackathon-avalanche/
 - **Tailwind CSS 3.4** + tokens semánticos (light/dark)
 - **shadcn/ui** + Radix UI primitives
 - **wagmi v2** + **viem v2** + **RainbowKit 2** (Core wallet prioritized)
-- **Framer Motion 11** (transitions, theme toggle)
+- **Framer Motion 11** (transitions, theme toggle, CTA letter animation)
 - **GSAP** (hero canvas animations)
 - **Three.js** (loading screen shader)
+- **cobe** ← NEW (sesión 2) — WebGL 3D globe en admin/jurisdictions
+- **@sumsub/websdk-react** ← NEW (sesión 2) — iframe widget de KYC
 - **TanStack Query v5** (data fetching + cache)
 - **TanStack Table v8** (DataTable)
-- **React Hook Form 7** + Zod resolvers
+- **React Hook Form 7** + Zod resolvers (con `.refine` cross-field para confirmar contraseña)
 - **Zustand 5** (estado cliente persistido)
 - **Recharts 2** (charts)
-- **lucide-react** (iconos)
+- **lucide-react** (iconos, incluyendo `Lock` para items disabled)
 - **cmdk** (⌘K palette)
 - **date-fns 4** (locale es)
 - **Sonner** (toasts)
@@ -809,6 +936,28 @@ Lista de decisiones técnicas YA TOMADAS. **No cambiar sin justificación explí
 | **`packages/blockchain/.git` (creado por `forge install`) eliminado** | Bloqueaba `git add` por verse como submódulo nested.                                                      |
 | **No usé git submodules para OZ**                                     | `forge install --no-commit` no setup gitlinks. Simplicidad: .gitignore lib/ + `forge install` post-clone. |
 
+## Decisiones de sesión 2 (Sumsub + wallet linking + admin)
+
+| Decisión                                                                            | Razón                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sumsub sandbox como KYC provider**                                                | Self-serve signup, webhooks HMAC-signed que matchean nuestro schema, level configurable, soporta INE/CURP/CFE (docs MX). Truora/Mati eran candidatos pero requerían sales call.                                                                                                  |
+| **Helper viem directo a IdentityRegistry (`lib/server/chain/identityRegistry.ts`)** | El SDK avalanche del proyecto tira throw porque el adapter no está implementado. Mi código nuevo necesitaba escribir on-chain → uso viem directo. Idempotente (lee `isVerified` antes). Falla silenciosa si faltan vars (returns `{skipped: true}`) — KYC no se rompe por chain. |
+| **Reconcile en `/api/admin/investors`**                                             | Defensa en profundidad: si el webhook NO llega (tunnel down, URL stale), el admin endpoint sincroniza pending records cada vez que el admin abre la página. Self-healing.                                                                                                        |
+| **Batch + throttle del reconcile**                                                  | `Promise.allSettled` batches de 5 + throttle in-process 15s. Sin esto, una recarga rápida del admin haría N fetches paralelos a Sumsub. Con esto, hasta 5 paralelos y skip si ya reconciliamos hace <15s.                                                                        |
+| **Polling cada 4s en `/onboarding/kyc`**                                            | Fallback primario al webhook. Mientras el user está en la página, polling es real-time. Si webhook llega antes, polling solo observa el state ya escrito. Si webhook NO llega, polling es la única vía de update.                                                                |
+| **`KycRecord` es source of truth, `Identity` es mirror on-chain**                   | El admin endpoint prioriza `KycRecord.status` (Sumsub) sobre `Identity.kycStatus` (on-chain). Si están desincronizados (e.g. tx on-chain falló), admin ve el verdict real de Sumsub.                                                                                             |
+| **`Identity.claimHash` derivado del KycRecord.id**                                  | El schema requiere `claimHash` (32-byte hex). Hasta tener un `ClaimIssuer` real, derivamos deterministicamente: `0x + hex(KycRecord.id) padded a 64 chars`. Trazable hacia atrás desde el audit log.                                                                             |
+| **SIWE-like message format propio (no ERC-4361 estricto)**                          | El message incluye `mercado-ifc.local` (`SIWE_DOMAIN`), la wallet, URI, Chain ID 43113, e `Issued At`. Backend valida vía: `recoverMessageAddress` viem + match address (case-insensitive) + freshness check (±10 min via `Issued At`).                                          |
+| **Case-insensitive address match en `linkWallet`**                                  | Zod transform lowercasea `address`, pero el message lleva checksum (mixed-case). El check `message.includes(address)` falla. Fix: `message.toLowerCase().includes(address)` (address ya está lower).                                                                             |
+| **Cobe globe theme-aware**                                                          | El componente CDN tiene colores hardcoded en light. Lo hice theme-aware con `useTheme()` interno + `isDark` en el dep array del effect → re-init del globo al cambiar theme. Mantiene `baseColor` blanco en ambos modes pero ajusta `glowColor`, `dark`, `diffuse`, `opacity`.   |
+| **Browser-extension hydration warnings → `suppressHydrationWarning` en `<body>`**   | Grammarly inyecta `data-new-gr-c-s-check-loaded` antes de hidratar. Equivalente al patrón ya existente en `<html>` para next-themes.                                                                                                                                             |
+| **Mounted gate para UI wallet-dependent (Topbar, onboarding/wallet)**               | `useAccount()` de wagmi devuelve `isConnected=false` en SSR y rehidrata `true` en client → mismatch. Patrón: `const [mounted, setMounted] = useState(false); useEffect(() => setMounted(true), []);` y gate la UI condicional.                                                   |
+| **`withErrorHandler` ctx tipo `{ params: Promise<...> }` (sin `\| undefined`)**     | Next 15 generated route types rechazan el shape `\| undefined` con error en build. El ctx siempre es definido en runtime.                                                                                                                                                        |
+| **Confirmar contraseña: form-only, no en `RegisterDto`**                            | El campo `confirmPassword` se valida con `.extend().refine()` solo en el página. Antes del POST se destructura para no pasarlo al backend. Mantiene la API contract limpia.                                                                                                      |
+| **Sidebar: longest-prefix-wins + optimistic highlight**                             | Bug previo: en `/investor/portfolio` se marcaban Inicio Y Portafolio (`startsWith('/investor')` true para ambos). Fix: `path === href \|\| path.startsWith(href + '/')` + comparar prefix-length. Optimistic local state hace que el highlight se mueva al instante del click.   |
+| **`outputFileTracingRoot` pinned a monorepo root**                                  | Next inferá un `pnpm-lock.yaml` perdido en `C:\Users\USER\` como workspace root. Pin explícito evita warnings y trace de archivos incorrectos para production output.                                                                                                            |
+| **Scripts de inspección DB en `scripts/check-*.ts`**                                | Útiles para debugging futuros (verificar wallet linkage, KYC state, audit log). Se corren via `pnpm exec dotenv -e ../../.env -- pnpm exec tsx ...` desde `apps/web/`.                                                                                                           |
+
 ## Convenciones del proyecto (CLAUDE.md hard rules)
 
 - **Spanish first** en strings user-facing.
@@ -830,7 +979,7 @@ Lista de decisiones técnicas YA TOMADAS. **No cambiar sin justificación explí
 
 Working tree: `git status --short` muestra solo `?? .claude/settings.local.json` (user-local, intencional). Todo lo demás commiteado y pushed.
 
-## Logros tangibles de la sesión
+## Logros tangibles de la sesión 1
 
 1. **7 smart contracts producción-ready** en `packages/blockchain/src/` (5 core + 1 interface + 3 módulos)
 2. **141 tests Foundry** verde, 16ms ejecución
@@ -840,6 +989,23 @@ Working tree: `git status --short` muestra solo `?? .claude/settings.local.json`
 6. **Frontend hooks live reads**: `useKycStatus`, `useTokenHolding`, `OnChainStatusCard` montado en investor dashboard
 7. **Backend `.env` sincronizado** con direcciones Fuji
 8. **7 docs actualizados** + 1 nuevo (`deployment.md`)
+
+## Logros tangibles de la sesión 2
+
+1. **Sumsub KYC sandbox end-to-end integrado** (WebSDK widget + token endpoint + status polling + webhook HMAC-verified)
+2. **Real SIWE-like wallet linking** que reemplaza al mock 100% fake. Verifica firma server-side con viem, anti-replay con timestamp window
+3. **Helper viem directo a `IdentityRegistry`** que bypassea el SDK avalanche roto. Idempotente, falla silenciosa
+4. **`GET /api/admin/investors`** que devuelve data real (User + Wallet + Identity + KycRecord + trades aggregation) con auto-reconcile batched+throttled de pending Sumsub records
+5. **Landing polish**: CTA animado pre-FAQ (BackgroundPaths), Compliance section como bento grid, HowItWorks address con ASCII ellipsis
+6. **Admin/jurisdictions con globo 3D Cobe** WebGL theme-aware (light = warm beige original, dark = brand-blue glow), lock icons en países bloqueados
+7. **Bug fixes**: 5+ hydration mismatches resueltos, `useAuditLog` handles wrapped response, `withErrorHandler` ctx type fix, `linkWallet` case-insensitive match
+8. **Build de producción verde** (`next build` exit 0, ~60 rutas generadas, middleware 34.4 kB)
+9. **Optimizaciones**: reconcile batched 5x con `Promise.allSettled` + throttle 15s, `outputFileTracingRoot` pinned, `.next` cache limpio
+10. **Sidebar fixes**: longest-prefix-wins active state + optimistic highlight + drop cross-portal links (RBAC)
+11. **Topbar logout**: shader farewell screen + redirect a landing (mirrors login UX)
+12. **Register**: confirmar contraseña field con cross-field Zod refine
+13. **Scripts de inspección DB**: `scripts/check-wallet.ts`, `scripts/check-kyc.ts`
+14. **HANDOFF actualizado** (este documento)
 
 ## Comportamiento en ejecución
 
@@ -852,12 +1018,27 @@ Working tree: `git status --short` muestra solo `?? .claude/settings.local.json`
 
 ```
 Address:       0x66Cb45eE3646759179901567Fa81Fe2EBa639278
-Balance AVAX:  ~0.4895
+Balance AVAX:  ~0.4895 (al cierre sesión 1; revisar antes de hacer más TXs)
 Balance USDC:  10,000.25 (10k del mint inicial + 0.25 del fee del demo trade)
 KYC status:    Verified (on-chain en IdentityRegistry)
 Roles:         oracle (IR), admin (CM, Factory, Settlement), matcher (Settlement),
                fee recipient, issuer admin del ARKDEMO demo, AGENT_ROLE del ARKDEMO
 ```
+
+## Usuarios reales en DB (sesión 2)
+
+```
+migue714.mg@gmail.com    role=admin     wallet=0xa24f1a1afb5ca441554633b750923e6e6eef7dd9   kyc=pending
+josemg.714@hotmail.com   role=investor  wallet=0x5f5300...2abb                              kyc=pending
++ 5 seed users (example.mx)  role=investor  kyc=verified                                    provider=mock
+```
+
+Si `KycRecord.status='pending'` se queda atascado, revisar:
+
+1. Tunnel de cloudflare arriba? (`curl -m 5 -o /dev/null -w "%{http_code}" https://<sub>.trycloudflare.com`)
+2. URL del webhook en Sumsub dashboard apunta al tunnel actual?
+3. Sumsub aprobó el applicant del lado de provider? (cockpit.sumsub.com → Applicants)
+4. Si todo lo anterior está bien y sigue pending → recarga `/admin/investors` (dispara reconcile)
 
 ---
 
@@ -865,23 +1046,29 @@ Roles:         oracle (IR), admin (CM, Factory, Settlement), matcher (Settlement
 
 ## Riesgos actuales
 
-| Riesgo                                                           | Severidad                                        | Mitigación                                                                                                  |
-| ---------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| **Private key del deployer en `.env` local**                     | Media (testnet only, gitignored)                 | Mantener .env fuera de git. NUNCA usar esta key en mainnet.                                                 |
-| **Backend SDK lanza throw si `CHAIN_MODE=avalanche`**            | Baja                                             | `.env` quedó con `CHAIN_MODE=mock` intencionalmente. NO cambiar sin implementar el adapter avalanche real.  |
-| **Frontend type-check tiene 3 errores Zod v3/v4 pre-existentes** | Baja (no bloquean, no introducidos por nosotros) | Pendiente fix global de Zod versioning, no urgente.                                                         |
-| **Faucet oficial de Avalanche requiere cupón**                   | Media (afecta onboarding de nuevos devs)         | Documentado uso de Chainlink/Stakely como fallbacks en `deployment.md`.                                     |
-| **`MAX_FEE_BPS = 500` es constant, no setteable**                | Baja (por diseño)                                | Si necesitamos cambiar el cap, requiere redeploy del Settlement. Esto es intencional para garantía.         |
-| **Settlement requiere approvals previos de ambas partes**        | Baja                                             | UX standard de DEX. Frontend debe guiar al user a hacer `approve(Settlement, max)` antes de firmar órdenes. |
-| **Mint público en MockUSDC**                                     | Crítica si se deploya en mainnet                 | Documentado en NatSpec. NUNCA deployar en mainnet.                                                          |
-| **Indexer no está corriendo persistente**                        | Media                                            | Hoy se invoca manualmente. Para producción, daemon + monitoring.                                            |
+| Riesgo                                                           | Severidad                                        | Mitigación                                                                                                                                                                |
+| ---------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Private key del deployer en `.env` local**                     | Media (testnet only, gitignored)                 | Mantener .env fuera de git. NUNCA usar esta key en mainnet.                                                                                                               |
+| **Sumsub credentials compartidas en chat (sandbox)**             | Baja (sandbox, prefijo `sbx:`)                   | Después del hackathon, rotar desde el Sumsub dashboard. Las credenciales están en `.env` gitignored.                                                                      |
+| **`CHAIN_MODE=avalanche` con adapter SDK no implementado**       | Media (rutas SDK-based dan 500 en runtime)       | Mi código nuevo (Sumsub, on-chain verify) usa viem directo y NO depende del SDK. Las rutas viejas (offerings/orders/match) sí dependen y dan 500 hasta que se implemente. |
+| **Tunnel Cloudflare Quick Tunnels son efímeros**                 | Media (afecta sólo webhook)                      | Polling + reconcile pasivo cubren el caso webhook-down. Para URL persistente: deploy a Vercel (steps en sección 12).                                                      |
+| **Frontend type-check tiene 3 errores Zod v3/v4 pre-existentes** | Baja (no bloquean, no introducidos por nosotros) | Pendiente fix global de Zod versioning, no urgente.                                                                                                                       |
+| **Faucet oficial de Avalanche requiere cupón**                   | Media (afecta onboarding de nuevos devs)         | Documentado uso de Chainlink/Stakely como fallbacks en `deployment.md`.                                                                                                   |
+| **`MAX_FEE_BPS = 500` es constant, no setteable**                | Baja (por diseño)                                | Si necesitamos cambiar el cap, requiere redeploy del Settlement. Esto es intencional para garantía.                                                                       |
+| **Settlement requiere approvals previos de ambas partes**        | Baja                                             | UX standard de DEX. Frontend debe guiar al user a hacer `approve(Settlement, max)` antes de firmar órdenes.                                                               |
+| **Mint público en MockUSDC**                                     | Crítica si se deploya en mainnet                 | Documentado en NatSpec. NUNCA deployar en mainnet.                                                                                                                        |
+| **Indexer no está corriendo persistente**                        | Media                                            | Hoy se invoca manualmente. Para producción, daemon + monitoring.                                                                                                          |
+| **Equipo de 2+ devs comparten una sola Supabase**                | Baja (intencional)                               | Comparten DB → ven la data del otro. No es un bug. Si quisieran isolation total, cada uno haría su Supabase free tier.                                                    |
+| **Webhook Sumsub apunta a tunnel personal de un dev**            | Media (afecta otros devs si tunnel cae)          | Solo UNO de los devs debe correr tunnel a la vez. Los otros usan polling + reconcile. Solución permanente: Vercel deploy.                                                 |
 
 ## Potenciales blockers para próximas sesiones
 
-1. **Si el adapter avalanche del SDK falla** → Settlement queda backend-mockeado. Frontend live reads siguen funcionando independientes.
+1. **Si el adapter avalanche del SDK falla** → rutas `/api/offerings`, `/api/orders` etc dan 500. Frontend live reads + KYC + wallet linking + admin investors siguen funcionando porque usan viem directo.
 2. **Si necesitamos verificar contratos en Snowtrace** → necesitamos `ROUTESCAN_API_KEY` (gratis en routescan.io, signup requerido).
-3. **Si el saldo AVAX del deployer baja a < 0.01** → no podremos hacer más TXs sin refill. Hay 0.484 — alcanza para ~50 TXs más.
+3. **Si el saldo AVAX del deployer baja a < 0.01** → no podremos hacer más TXs sin refill. Hay 0.484 (al cierre s1; verificar antes de batch operations).
 4. **Si OZ saca v5.7+ con breaking changes** → currently pin a 5.6.1 vía `forge install` (lock no estricto). Considerar `forge install OpenZeppelin/openzeppelin-contracts@v5.6.1` para pin explícito.
+5. **Sumsub webhook URL stale** → admin no ve KYC updates de inmediato. **Fix**: el reconcile en `/api/admin/investors` cubre el caso. Si admin no recarga, polling del usuario en `/onboarding/kyc` también actualiza la DB.
+6. **`.next` cache puede corromperse** mezclando pages/app router artifacts → `rm -rf apps/web/.next && pnpm exec next build` desde `apps/web/`.
 
 ---
 
@@ -908,20 +1095,26 @@ Ordenado por valor entregado al demo y al jurado.
 
 ## P1 — Funcionalidad faltante crítica
 
-4. **Adapter avalanche real en `packages/sdk`** (4–8h)
-   - Implementar las 5 interfaces (`IdentityRegistryAdapter`, `ComplianceRegistryAdapter`, `SecurityTokenAdapter`, `SettlementAdapter`, `OrderbookAdapter`) usando viem
+4. **Deploy a Vercel** (15–20 min) — URL persistente para webhook Sumsub
+   - Conectar repo en vercel.com → New Project → root dir `apps/web`
+   - Copiar todas las `SUMSUB_*`, `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `NEXTAUTH_*`, `NEXT_PUBLIC_*`, `*_PRIVATE_KEY`, `NEXT_PUBLIC_USE_MOCKS=false`, `CHAIN_MODE=mock` (importante: mock, no avalanche), addresses contratos
+   - Tomar URL `https://hackathon-avalanche-*.vercel.app`
+   - Actualizar webhook en Sumsub dashboard a `https://<vercel>/api/kyc/sumsub/webhook` — esta URL no cambia más
+
+5. **Adapter avalanche real en `packages/sdk`** (4–8h)
+   - Implementar las 5 interfaces (`IdentityRegistryAdapter`, `ComplianceRegistryAdapter`, `SecurityTokenAdapter`, `SettlementAdapter`, `OrderbookAdapter`) usando viem (mismo patrón que `lib/server/chain/identityRegistry.ts`)
    - Cambiar `CHAIN_MODE=avalanche` en `.env`
    - El matching engine del backend ahora settleará a Fuji real
    - Test: crear orden vía API → matching engine → ver TX real en chain
 
-5. **`MaxInvestmentModule`** (1–2h)
+6. **`MaxInvestmentModule`** (1–2h)
    - Tope per-investor no calificado (cumple CNBV)
    - Storage: `mapping(address token => uint256 maxPerInvestor)` + `mapping(address token => mapping(address => uint256)) invested`
    - canTransfer: si receiver no es accredited, `invested[token][to] + amount <= max`
    - moduleAction: actualiza `invested[token][to] += amount` post-transfer
    - Tests Foundry + bind en demo flow
 
-6. **`ClaimIssuer`** (2–3h)
+7. **`ClaimIssuer`** (2–3h)
    - Contrato que firma claims EIP-712 sobre identidades
    - `IdentityRegistry` opcional consulta claims firmadas en lugar de oracle directo
    - Permite identidad portable entre IFCs (Arkangeles claim válido en Bankaool)
@@ -1051,7 +1244,7 @@ Estoy retomando el proyecto Mercado Secundario IFC sobre Avalanche
 
 CONTEXTO IMPORTANTE:
 - Repo: github.com/Kaii35/hackathon-avalanche, branch main
-- Working dir: c:\Users\User\hackathon-avalanche
+- Working dir: c:\Users\USER\Desktop\hack\hackathon-avalanche
 - Idioma: respóndeme en español; los strings user-facing del producto van en español, código/comentarios en inglés.
 - CLAUDE.md y docs/SESSION-HANDOFF.md tienen TODO el contexto técnico.
   POR FAVOR LEE docs/SESSION-HANDOFF.md PRIMERO antes de proponer nada;
@@ -1068,9 +1261,29 @@ ESTADO ACTUAL:
 - 141 Foundry tests verde (8 suites, ~16ms)
 - Demo flow end-to-end ejecutado on-chain (9 TXs reales en Snowtrace)
 - Frontend live reads vía wagmi: useKycStatus, useTokenHolding, OnChainStatusCard
-- Backend SDK sigue en mock mode (CHAIN_MODE=mock); adapter avalanche real es PENDIENTE
-- Deployer wallet: 0x66Cb45eE3646759179901567Fa81Fe2EBa639278 con ~0.4895 AVAX
-- 2 commits y push limpios: f77586d (contracts+frontend) y 7f5652d (docs)
+
+NUEVO EN SESIÓN 2:
+- Sumsub KYC sandbox INTEGRADO end-to-end (token + status + webhook HMAC) — credenciales en .env
+- Real SIWE-like wallet linking — POST /api/users/me/wallet con recoverMessageAddress + freshness check
+- On-chain IdentityRegistry.verifyAddress via viem directo (bypassea SDK avalanche roto)
+- GET /api/admin/investors con DATA REAL (User+Wallet+Identity+KycRecord+trades) + auto-reconcile
+- Globo 3D Cobe theme-aware en admin/jurisdictions
+- Landing: CTA animado pre-FAQ, Compliance bento grid, HowItWorks fix
+- Confirmar contraseña en registro
+- 5+ hydration mismatches resueltos
+- Build de producción VERDE (next build exit 0)
+- Último commit: 6173f08 (Sumsub + wallet linking + admin investors + landing polish)
+
+CONFIGURACIÓN ACTUAL (.env, gitignored):
+- CHAIN_MODE=avalanche (rutas SDK-based dan 500; mi código nuevo no depende del SDK)
+- Sumsub sandbox configurado con level "basic-kyc-level"
+- Webhook secret: cgMqJUVZRq6J375VRtd3j-_SiiP (de Sumsub dashboard)
+- NEXT_PUBLIC_USE_MOCKS=false
+
+USUARIOS EN DB:
+- migue714.mg@gmail.com (admin, wallet 0xa24f...7DD9, KYC pending)
+- josemg.714@hotmail.com (investor, wallet 0x5f53...2abb, KYC pending)
+- 5 seeds *.example.mx (investor, KYC verified, provider=mock)
 
 DECISIONES TÉCNICAS FIRMES (no cambiar sin razón):
 - Solidity 0.8.24 + viaIR (NO 0.8.20 — OZ v5.6 lo requiere transitivamente)
@@ -1078,11 +1291,14 @@ DECISIONES TÉCNICAS FIRMES (no cambiar sin razón):
 - OZ v5.6.1
 - AccessControl con DEFAULT_ADMIN_ROLE + AGENT_ROLE en SecurityToken
 - AccessControl con DEFAULT_ADMIN_ROLE + MATCHER_ROLE en Settlement
-- Single _update gate en SecurityToken; compliance.canTransfer y compliance.moduleAction
+- Single _update gate en SecurityToken
 - TokenFactory hace renounceRole al final (zero residual power)
-- Settlement: EIP-712 (domain "ArkangelesSettlement" "1"), MAX_FEE_BPS=500, nonReentrant, sin custodia
-- Módulos compliance scoped por msg.sender (el SecurityToken llamante)
-- Custom errors tipados, no require strings
+- Settlement: EIP-712 ("ArkangelesSettlement" v1), MAX_FEE_BPS=500, nonReentrant
+- Módulos compliance scoped por msg.sender
+- Sumsub: KycRecord = source of truth, Identity = mirror on-chain (admin endpoint prioriza KycRecord.status)
+- Reconcile en admin = batched 5x Promise.allSettled + throttle 15s in-process
+- Helper viem directo en lib/server/chain/identityRegistry.ts bypassea el SDK roto
+- Cobe globe re-init en theme change vía isDark en dep array
 
 REGLAS HARD (de CLAUDE.md):
 - Cada transfer path en SecurityToken DEBE pasar por compliance.canTransfer y emitir Transfer
@@ -1090,16 +1306,27 @@ REGLAS HARD (de CLAUDE.md):
 - Cada order POST verifica EIP-712 sig (nunca trust maker from body)
 - Sin PII en logs
 - Spanish first en user-facing copy
+- Solo emojis si el user lo pide
+- No crear .md nuevos sin pedido explícito (este HANDOFF es excepción)
 
-PRÓXIMOS PASOS RECOMENDADOS (ver docs/SESSION-HANDOFF.md sección 13 para detalle):
-1. Verificar contratos en Snowtrace (necesita ROUTESCAN_API_KEY)
-2. Re-validar el frontend en browser con la wallet conectada
-3. Generar más actividad on-chain (re-correr DemoFlow.s.sol 2-3 veces)
-4. Decidir entre tres caminos:
-   A) Implementar adapter avalanche real en packages/sdk (matching engine settle a chain real)
-   B) MaxInvestmentModule + ClaimIssuer (impresionar regulatoriamente)
-   C) UI de orderbook + EIP-712 signing + TokenFactory.deployOffering (impresionar visualmente)
+WEBHOOK SUMSUB:
+- Cloudflare Quick Tunnel (efímero, URL cambia en cada restart)
+- Solución persistente PENDIENTE: deploy a Vercel para URL fija
+- Mientras tanto: polling + reconcile cubren cuando webhook no llega
+
+PRÓXIMOS PASOS RECOMENDADOS (ver sección 12-13 para detalle):
+1. Deploy a Vercel para webhook persistente (15-20 min)
+2. Verificar contratos en Snowtrace (necesita ROUTESCAN_API_KEY)
+3. Adapter avalanche real en packages/sdk (libera /api/offerings y matching engine)
+4. MaxInvestmentModule + ClaimIssuer
 5. Pitch deck + video + one-pager
+
+COMANDOS PRINCIPALES:
+- pnpm dev                                 # web :3000 + indexer :3001
+- cd apps/web && pnpm exec next build      # build producción
+- cd apps/web && pnpm exec tsc --noEmit    # type-check
+- cd packages/blockchain && forge test     # 141 tests Foundry
+- cloudflared tunnel --url http://localhost:3000  # tunnel efímero
 
 Hoy quiero: <describe aquí qué quieres hacer en esta nueva sesión>
 ```
@@ -1181,4 +1408,46 @@ cast send 0x8Db4A89761b208Da299dB9f1979252093A56C45A `
 
 ---
 
-**Fin del handoff. Total: 15 secciones, ~10k palabras de contexto técnico denso. Diseñado para que mañana este documento solo + el comando de la sección 14 te permitan retomar sin perder ningún detalle.**
+**Fin del handoff. Total: 15 secciones + 4.B (KYC stack) y 16 (Sumsub setup), ~12k palabras de contexto técnico denso. Actualizado 2026-05-16 sesión 2 (commit `6173f08`). Diseñado para que mañana este documento solo + el comando de la sección 14 te permitan retomar sin perder ningún detalle.**
+
+---
+
+## 16. Sumsub setup — cheatsheet
+
+Si retomas y necesitas re-configurar Sumsub desde cero o un sandbox nuevo:
+
+1. **Cuenta Sumsub** → [cockpit.sumsub.com](https://cockpit.sumsub.com) → Dev space → App tokens
+2. **Crear App Token** sandbox → te da `sbx:XXXX.YYYY` (app token) + secret key
+3. Pega en `.env`:
+   ```
+   SUMSUB_BASE_URL=https://api.sumsub.com
+   SUMSUB_APP_TOKEN="sbx:..."
+   SUMSUB_SECRET_KEY="..."
+   SUMSUB_LEVEL_NAME=basic-kyc-level
+   SUMSUB_WEBHOOK_SECRET="<set después>"
+   ```
+4. **Crear Verification Level** en dashboard: Verification configurations → New level → name `basic-kyc-level` → agrega step `Identity document` (selecciona países MX/US/etc.)
+5. **Webhook** (opcional pero recomendado para producción):
+   - Levanta tunnel: `cloudflared tunnel --url http://localhost:3000`
+   - Dashboard → Integrations → Webhooks → New
+   - Objetivo: `https://<tunnel>.trycloudflare.com/api/kyc/sumsub/webhook`
+   - Tipos: `applicantReviewed`, `applicantPending`, `applicantOnHold`, `applicantCreated`
+   - Algoritmo: `SHA256`
+   - Copia la clave secreta a `SUMSUB_WEBHOOK_SECRET` en `.env`
+   - Reinicia `pnpm dev` (Next no recarga `.env` en HMR)
+6. **Verificar end-to-end:**
+   - Login con un user investor
+   - Ir a `/onboarding/kyc` → "Iniciar verificación"
+   - Completar flow (sandbox auto-aprueba)
+   - Esperar polling capture o webhook callback (≤4s)
+   - Si tienes wallet linkeada, verás link al TX en Snowtrace
+
+**Scripts de inspección (útiles para debugging):**
+
+```bash
+# Verificar wallet en DB
+cp scripts/check-wallet.ts apps/web/scripts-temp.ts && cd apps/web && pnpm exec dotenv -e ../../.env -- pnpm exec tsx scripts-temp.ts && rm scripts-temp.ts
+
+# Verificar KycRecords y audit log
+cp scripts/check-kyc.ts apps/web/scripts-temp.ts && cd apps/web && pnpm exec dotenv -e ../../.env -- pnpm exec tsx scripts-temp.ts && rm scripts-temp.ts
+```
