@@ -29,6 +29,7 @@ import { OfferingCard } from '@/components/offerings/OfferingCard';
 import { ConnectWalletPrompt } from '@/components/wallet/ConnectWalletPrompt';
 import { OnChainStatusCard } from '@/components/dashboard/OnChainStatusCard';
 import { DividendsClaimableBanner } from '@/components/dividends/DividendsClaimableBanner';
+import { VotesPendingBanner } from '@/components/governance/VotesPendingBanner';
 import { useOfferings } from '@/lib/client/queries/offerings';
 import { usePortfolio, usePortfolioHistory } from '@/lib/client/queries/portfolio';
 import { useWallet } from '@/hooks/useWallet';
@@ -149,6 +150,7 @@ export default function InvestorDashboard() {
       ) : (
         <>
           {address && <DividendsClaimableBanner wallet={address} />}
+          {address && <VotesPendingBanner wallet={address} />}
 
           {address && (
             <div className="mb-4">
