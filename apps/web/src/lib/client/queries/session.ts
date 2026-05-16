@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useDisconnect } from 'wagmi';
 import type { SessionUser } from '@hack/shared';
 import { api, ApiError } from '../api';
 
@@ -27,6 +28,7 @@ export function useSession() {
 
 export function useLogout() {
   const queryClient = useQueryClient();
+  const { disconnect } = useDisconnect();
   return useMutation({
     mutationFn: async () => {
       try {
@@ -36,6 +38,9 @@ export function useLogout() {
       }
     },
     onSuccess: () => {
+      // Clear wagmi connection alongside the session so the next user lands
+      // without a stale wallet auto-reconnected.
+      disconnect();
       queryClient.setQueryData(SESSION_KEY, null);
       queryClient.invalidateQueries({ queryKey: SESSION_KEY });
     },

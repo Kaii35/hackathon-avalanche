@@ -1,6 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { parseUnits, type Address } from 'viem';
+import { useAccount } from 'wagmi';
 import {
   Badge,
   Button,
@@ -12,17 +15,33 @@ import {
   TabsList,
   TabsTrigger,
 } from '@hack/ui';
-import { Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertTriangle, Info } from 'lucide-react';
 import { useCreateOrder } from '@/lib/client/queries/orderbook';
+import { useKycStatus } from '@/hooks/useKycStatus';
+import { CONTRACT_ADDRESSES, FUJI_DEMO_TOKEN } from '@/lib/client/contracts';
+import { ApproveSettlementButton } from './ApproveSettlementButton';
 import { toast } from 'sonner';
+
+// Inline validation helpers
+function isPositiveInteger(v: string): boolean {
+  return /^\d+$/.test(v.trim()) && parseInt(v, 10) > 0;
+}
+function isValidPrice(v: string): boolean {
+  if (!v || isNaN(Number(v)) || Number(v) <= 0) return false;
+  const parts = v.split('.');
+  return !parts[1] || parts[1].length <= 6;
+}
 
 export function PlaceOrderPanel({
   offeringId,
+  tokenAddress,
   symbol,
   lastPrice,
   balance = 0,
 }: {
   offeringId: string;
+  /** On-chain address of the SecurityToken for this offering. */
+  tokenAddress?: Address;
   symbol: string;
   lastPrice: number;
   balance?: number;
@@ -31,21 +50,72 @@ export function PlaceOrderPanel({
   const [qty, setQty] = useState('100');
   const [price, setPrice] = useState(lastPrice.toFixed(2));
   const create = useCreateOrder();
+  const { address } = useAccount();
+  const kyc = useKycStatus(address ?? null);
+
+  // Resolve token: use prop, fall back to demo constant
+  const resolvedToken: Address = tokenAddress ?? FUJI_DEMO_TOKEN;
+  const usdcAddress = CONTRACT_ADDRESSES.usdc ?? undefined;
 
   const total = useMemo(() => Number(qty || '0') * Number(price || '0'), [qty, price]);
   const fee = total * 0.005;
 
+  const qtyError = qty && !isPositiveInteger(qty) ? 'Ingresa un número entero positivo' : null;
+  const priceError =
+    price && !isValidPrice(price) ? 'Precio inválido (máx. 6 decimales, mayor a 0)' : null;
   const insufficient = side === 'sell' && Number(qty) > balance;
 
-  const submit = async () => {
-    if (!qty || !price) return;
+  // Required base units for the allowance check
+  const requiredBaseUnits = useMemo((): bigint => {
     try {
-      await create.mutateAsync({ offeringId, side, qty, price });
-      toast.success(`Orden ${side === 'buy' ? 'de compra' : 'de venta'} firmada`, {
-        description: `${qty} ${symbol} @ ${price} USDC`,
-      });
+      if (side === 'buy' && price && total > 0) {
+        return parseUnits(total.toFixed(6), 6);
+      }
+      if (side === 'sell' && qty && isPositiveInteger(qty)) {
+        return parseUnits(qty, 18);
+      }
     } catch {
-      toast.error('Error al crear la orden');
+      // parseUnits throws on malformed input — treat as 0
+    }
+    return 0n;
+  }, [side, qty, price, total]);
+
+  const canSign =
+    !!qty && !!price && !qtyError && !priceError && !insufficient && !create.isPending && !!address;
+
+  const submit = async () => {
+    if (!canSign) return;
+    try {
+      const order = await create.mutateAsync({
+        offeringId,
+        tokenAddress: resolvedToken,
+        side,
+        qty,
+        price,
+      });
+      toast.success(`Orden ${side === 'buy' ? 'de compra' : 'de venta'} enviada`, {
+        description: (
+          <span>
+            {qty} {symbol} @ {price} USDC &mdash;{' '}
+            <Link href="/investor/orders" className="underline">
+              Ver mis órdenes
+            </Link>
+          </span>
+        ),
+        duration: 6000,
+      });
+      // Log order hash for debugging without exposing PII
+      if (process.env.NODE_ENV === 'development' && order && 'orderHash' in order) {
+        console.debug('[PlaceOrderPanel] orderHash', (order as { orderHash: string }).orderHash);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // User cancelled the wallet prompt — not an error, just a notice
+      if (/user (rejected|denied|cancelled|canceled)/i.test(msg)) {
+        toast.info('Firma cancelada por el usuario');
+      } else {
+        toast.error('Error al crear la orden', { description: msg });
+      }
     }
   };
 
@@ -58,6 +128,15 @@ export function PlaceOrderPanel({
         </Badge>
       </div>
 
+      {/* KYC warning — informational only, does not block order placement */}
+      {address && kyc.verified === false && (
+        <div className="mx-4 mt-3 flex items-start gap-2 rounded-md border border-warning-border bg-warning-bg p-2.5 text-xs text-warning-fg">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          Tu wallet no está KYC-verificada. Las órdenes que firmes no se podrán ejecutar hasta
+          completar KYC.
+        </div>
+      )}
+
       <Tabs value={side} onValueChange={(v) => setSide(v as 'buy' | 'sell')} className="px-4 pt-3">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="buy" className="data-[state=active]:text-success-fg">
@@ -69,23 +148,28 @@ export function PlaceOrderPanel({
         </TabsList>
 
         <TabsContent value={side} className="space-y-4 pt-4">
+          {/* Qty field */}
           <div className="space-y-1.5">
             <Label htmlFor="qty">Cantidad ({symbol})</Label>
             <Input
               id="qty"
               type="number"
-              inputMode="decimal"
+              inputMode="numeric"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
               min={1}
+              step={1}
+              aria-invalid={Boolean(qtyError)}
             />
-            {side === 'sell' && (
+            {qtyError && <p className="text-2xs text-danger-fg">{qtyError}</p>}
+            {side === 'sell' && !qtyError && (
               <p className="text-2xs text-foreground-tertiary tabular">
                 Disponible: {balance.toLocaleString('es-MX')} {symbol}
               </p>
             )}
           </div>
 
+          {/* Price field */}
           <div className="space-y-1.5">
             <Label htmlFor="price">Precio (USDC)</Label>
             <Input
@@ -94,8 +178,10 @@ export function PlaceOrderPanel({
               inputMode="decimal"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              step="0.01"
+              step="0.000001"
+              aria-invalid={Boolean(priceError)}
             />
+            {priceError && <p className="text-2xs text-danger-fg">{priceError}</p>}
             <div className="flex items-center justify-between text-2xs">
               <span className="text-foreground-tertiary">
                 Última: <span className="tabular">{lastPrice.toFixed(2)}</span>
@@ -110,6 +196,7 @@ export function PlaceOrderPanel({
             </div>
           </div>
 
+          {/* Order summary */}
           <div className="rounded-lg border border-border-subtle bg-elevated p-3">
             <dl className="space-y-1.5 text-xs">
               <div className="flex justify-between">
@@ -133,6 +220,7 @@ export function PlaceOrderPanel({
             </dl>
           </div>
 
+          {/* Insufficient balance warning */}
           {insufficient && (
             <div className="flex items-start gap-2 rounded-md border border-danger-border bg-danger-bg p-2.5 text-xs text-danger-fg">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -140,9 +228,21 @@ export function PlaceOrderPanel({
             </div>
           )}
 
+          {/* Approve button — rendered only when allowance is insufficient */}
+          {address && requiredBaseUnits > 0n && (
+            <ApproveSettlementButton
+              side={side}
+              tokenAddress={resolvedToken}
+              paymentToken={usdcAddress}
+              requiredAmount={requiredBaseUnits}
+              symbol={side === 'buy' ? 'USDC' : symbol}
+            />
+          )}
+
+          {/* Sign button */}
           <Button
-            onClick={submit}
-            disabled={!qty || !price || insufficient || create.isPending}
+            onClick={() => void submit()}
+            disabled={!canSign}
             className="w-full"
             variant={side === 'buy' ? 'success' : 'destructive'}
           >

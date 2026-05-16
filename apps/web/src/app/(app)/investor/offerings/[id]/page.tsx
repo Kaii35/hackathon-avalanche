@@ -321,6 +321,7 @@ export default function OfferingDetailPage({ params }: { params: Promise<{ id: s
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <PlaceOrderPanel
             offeringId={id}
+            tokenAddress={offering.tokenAddress as `0x${string}` | undefined}
             symbol={offering.symbol}
             lastPrice={lastPrice}
             balance={12500}

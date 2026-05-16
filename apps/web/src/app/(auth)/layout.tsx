@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand/Logo';
 import { getSession } from '@/lib/server/auth/session';
+import { DisconnectWalletOnAuth } from '@/components/auth/DisconnectWalletOnAuth';
 
 const PORTAL_FOR = {
   investor: '/investor',
@@ -18,6 +19,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      <DisconnectWalletOnAuth />
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-mesh opacity-80" />
       <div
         aria-hidden

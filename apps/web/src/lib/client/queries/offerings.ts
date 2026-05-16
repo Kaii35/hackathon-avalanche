@@ -13,37 +13,66 @@ export interface OfferingsFilters {
   search?: string;
 }
 
+// The real API returns OfferingResponseDto which is a subset of MockOffering.
+// UI components expect the rich Mock shape (trend7d, holders, lastTradePrice, ...).
+// This shim fills in safe defaults so the UI never crashes when those fields are missing.
+function enrichOffering(o: Partial<MockOffering> & MockOffering): MockOffering {
+  return {
+    ...o,
+    fundedPct: o.fundedPct ?? 0,
+    holders: o.holders ?? 0,
+    volume24h: o.volume24h ?? 0,
+    lastTradePrice: o.lastTradePrice ?? Number(o.pricePerUnit ?? 0),
+    trend7d: Array.isArray(o.trend7d) && o.trend7d.length > 0 ? o.trend7d : [0, 0, 0, 0, 0, 0, 0],
+    thumbnailColor: o.thumbnailColor ?? '#4F46E5',
+    pricingHistory: Array.isArray(o.pricingHistory) ? o.pricingHistory : [],
+    documents: Array.isArray(o.documents) ? o.documents : [],
+  };
+}
+
 export function useOfferings(filters?: OfferingsFilters) {
   return useQuery({
     queryKey: queryKeys.offerings.list(filters as Record<string, unknown> | undefined),
-    queryFn: () =>
-      apiOrMock<MockOffering[]>(`/api/offerings`, () => {
-        let result = MOCK_OFFERINGS;
-        if (filters?.status) result = result.filter((o) => o.status === filters.status);
-        if (filters?.sector) result = result.filter((o) => o.sector === filters.sector);
-        if (filters?.jurisdiction)
-          result = result.filter((o) => o.allowedJurisdictions.includes(filters.jurisdiction!));
-        if (filters?.search) {
-          const q = filters.search.toLowerCase();
-          result = result.filter(
-            (o) =>
-              o.name.toLowerCase().includes(q) ||
-              o.symbol.toLowerCase().includes(q) ||
-              o.issuerName.toLowerCase().includes(q),
-          );
-        }
-        return result;
-      }),
+    queryFn: async () => {
+      // Real API returns { items, total, page, pageSize }; mock returns MockOffering[].
+      // Unwrap so all consumers can treat the result as a flat array.
+      const raw = await apiOrMock<MockOffering[] | { items: MockOffering[] }>(
+        `/api/offerings`,
+        () => {
+          let result = MOCK_OFFERINGS;
+          if (filters?.status) result = result.filter((o) => o.status === filters.status);
+          if (filters?.sector) result = result.filter((o) => o.sector === filters.sector);
+          if (filters?.jurisdiction)
+            result = result.filter((o) => o.allowedJurisdictions.includes(filters.jurisdiction!));
+          if (filters?.search) {
+            const q = filters.search.toLowerCase();
+            result = result.filter(
+              (o) =>
+                o.name.toLowerCase().includes(q) ||
+                o.symbol.toLowerCase().includes(q) ||
+                o.issuerName.toLowerCase().includes(q),
+            );
+          }
+          return result;
+        },
+      );
+      const rawList: MockOffering[] = Array.isArray(raw) ? raw : (raw?.items ?? []);
+      const list = rawList.map(enrichOffering);
+      if (filters?.status) return list.filter((o) => o.status === filters.status);
+      return list;
+    },
   });
 }
 
 export function useOffering(id: string | undefined) {
   return useQuery({
     queryKey: queryKeys.offerings.detail(id ?? ''),
-    queryFn: () =>
-      apiOrMock<MockOffering | undefined>(`/api/offerings/${id}`, () =>
+    queryFn: async () => {
+      const raw = await apiOrMock<MockOffering | undefined>(`/api/offerings/${id}`, () =>
         MOCK_OFFERINGS.find((o) => o.id === id),
-      ),
+      );
+      return raw ? enrichOffering(raw) : undefined;
+    },
     enabled: Boolean(id),
   });
 }
