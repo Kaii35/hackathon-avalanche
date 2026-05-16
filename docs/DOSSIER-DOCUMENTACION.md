@@ -71,7 +71,7 @@ Construimos cuatro capas desacopladas:
 
 ### Estado actual
 
-MVP funcional construido en hackathon. Backend real con auth + DB + 22 endpoints API. Frontend completo con tres portales (~30 páginas). Mock blockchain layer que se comporta como la cadena real con la misma interfaz SDK que tendrá el adapter Avalanche real (swap = cambiar `mode: 'mock'` por `mode: 'avalanche'`). Smart contracts escritos como esqueleto, pendientes de tests, auditoría y deploy. Wallet integration (Core Wallet de Avalanche, MetaMask, Coinbase, Rabby) operativa. Light/dark mode con tokens semánticos. Hero animado en marca Arkangeles (azul electric).
+MVP funcional construido en hackathon. **Smart contracts ERC-3643 deployados y live en Avalanche Fuji** (chain 43113) con 141 tests Foundry verde. Demo flow end-to-end ejecutado on-chain: KYC oracle → factory deploy de oferta → mint primario a inversor KYC'd → 2 firmas EIP-712 (alice seller, bob buyer) → settlement atómico con fee de 0.5% — todo verificable en Snowtrace ([deployment.md](./deployment.md)). Backend real con auth + DB + 22 endpoints API. Frontend completo con tres portales (~30 páginas), ahora con hooks que leen state live de Fuji (`useKycStatus`, `useTokenHolding`, `OnChainStatusCard`). Mock blockchain layer en el backend SDK sigue activo para orderbook/matching/indexer; el adapter avalanche real (que reemplazaría el mock) es el siguiente paso natural. Wallet integration (Core Wallet de Avalanche, MetaMask, Coinbase, Rabby) operativa. Light/dark mode con tokens semánticos. Hero animado en marca Arkangeles (azul electric).
 
 ### Audiencias y qué busca cada una
 
@@ -327,23 +327,23 @@ Para `recoverMessageAddress` en SIWE-like flow + verificación de firmas EIP-712
 
 Schema validation runtime + tipos derivados. Usamos: cada API route valida body con `Schema.parse`. Schemas viven en `packages/shared/src/dto/` y son los mismos que el frontend importa para react-hook-form. Estado: producción-ready.
 
-### Smart contracts (preparado, no deployado)
+### Smart contracts (deployados en Fuji 43113, 141 tests verde)
 
 #### Solidity 0.8.24 + viaIR
 
-Lenguaje + compilador. Elegimos 0.8.24 por overflow checks built-in y custom errors. viaIR optimiza más agresivamente. Estado: contratos compilan, no testeados ni deployados.
+Lenguaje + compilador. Elegimos 0.8.24 por overflow checks built-in y custom errors tipados (más baratos que `require` strings). viaIR optimiza más agresivamente — necesario para EIP-712 + AccessControl + ReentrancyGuard que componen Settlement. Es además el pin mínimo de OpenZeppelin v5.6 (MessageHashUtils, Strings, Bytes son `^0.8.24`). Estado: 7 contratos deployados en Fuji.
 
-#### Hardhat 2.x + hardhat-toolbox
+#### Foundry (forge + cast + anvil)
 
-Framework de desarrollo Solidity. Elegido sobre Foundry porque Hardhat tiene mejor integración TS (typechain, scripts en TS). Foundry es más rápido para tests pero el equipo ya sabe Hardhat. Usamos: compile + scripts de deploy. Estado: setup ready.
+Framework de desarrollo Solidity. **Migramos de Hardhat a Foundry** durante la sesión por: (a) tests ~10x más rápidos — 141 tests en 16ms; (b) integración nativa con `vm.sign` y `_hashTypedDataV4` para flujos EIP-712 sin npm-side noise; (c) workflow más cercano al chain (todo en Solidity). Trade-off: menos integración TypeScript que Hardhat, mitigado porque los scripts de despliegue (`Deploy.s.sol`, `DemoFlow.s.sol`) viven en Solidity y son auto-contenidos. Estado: setup + deploy + demo flow ejecutado contra Fuji real.
 
-#### OpenZeppelin contracts 5
+#### OpenZeppelin contracts v5.6.1
 
-Implementaciones audit-ready de ERC-20, AccessControl, Pausable, etc. Elegido por ser estándar de la industria. Usamos: como base de SecurityToken. Estado: imports listos, no usados extensivamente todavía.
+Implementaciones audit-ready: `Ownable`, `AccessControl`, `ERC20`, `Pausable`, `EIP712`, `ECDSA`, `ReentrancyGuard`, `SafeERC20`. v5 introdujo cambios en signatures (ej. `Ownable(initialOwner)` constructor explícito) — todos los contratos del proyecto cumplen el patrón v5. Estado: integrado en producción.
 
 #### Estándar ERC-3643 (T-REX)
 
-Standard de security tokens regulados. Elegido sobre ERC-1404 (más limitado) y ERC-1400 (menos adopción). Razón: identity + compliance modules separados del token, evolucionables sin redeploy. Usamos: como referencia arquitectónica para nuestros contratos. Estado: arquitectura inspirada, implementación parcial.
+Standard de security tokens regulados. Implementación: `IdentityRegistry` separado del token, `ComplianceManager` con módulos enchufables (`HoldingPeriod`, `MaxHolders`, `Jurisdiction`), `SecurityToken` que invoca compliance en cada `_update` (mint/burn/transfer/forcedTransfer todos pasan por el mismo gate). Decisión clave de implementación: módulos scoped por `msg.sender` (el token llamante), de modo que una sola deployment de cada módulo sirve a todas las ofertas de la plataforma. Estado: arquitectura implementada y validada end-to-end on-chain.
 
 ### Mock blockchain SDK
 
@@ -685,6 +685,9 @@ Pendiente. Diseño: contrato `Dividends.sol` que recibe USDC, calcula pro-rata p
 - Light/dark theme toggle (persiste)
 - Liquid Glass buttons en CTAs del Hero
 - ~30 páginas frontend completas
+- **Smart contracts deployados en Avalanche Fuji** — 5 contratos core + 3 módulos compliance, 141 tests Foundry verde
+- **Demo flow end-to-end on-chain ejecutado** — 9 TXs reales en Fuji incluyendo settlement EIP-712 atómico
+- **Frontend hooks live** (`useKycStatus`, `useTokenHolding`, `OnChainStatusCard`) leyendo state real desde Fuji vía wagmi sin mocks
 
 ### Mock o placeholder (interfaz lista, sin lógica real on-chain)
 
@@ -698,9 +701,12 @@ Pendiente. Diseño: contrato `Dividends.sol` que recibe USDC, calcula pro-rata p
 
 ### Pendiente
 
-- Deploy real de smart contracts a Fuji
-- Tests unitarios de smart contracts
-- Auditoría de smart contracts (post-hackathon)
+- ~~Deploy real de smart contracts a Fuji~~ ✅ hecho
+- ~~Tests unitarios de smart contracts~~ ✅ 141 tests Foundry verde
+- Verificación de contratos en Snowtrace (subir source code para auditabilidad pública del jurado)
+- Adapter real de Avalanche en `packages/sdk` — el backend (matching engine + indexer) sigue en mock; reemplazo permitiría que orderbook + settlement queden completamente on-chain
+- Módulos compliance pendientes: `MaxInvestmentModule` (tope per-investor no calificado) y `ClaimIssuer` (claims firmadas externas para identidad portable entre IFCs)
+- Auditoría formal de smart contracts (post-hackathon — recomendado Halborn/OpenZeppelin)
 - Integración con KYC provider real
 - Workers BullMQ corriendo persistentes
 - WalletConnect mobile QR (requiere Reown project ID)

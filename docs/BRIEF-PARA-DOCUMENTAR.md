@@ -103,17 +103,14 @@ Plataforma de **tokenización y mercado secundario regulado** para participacion
 - pino
 - @prisma/client (writes a Postgres)
 
-### 3.4 Smart contracts (packages/contracts) — preparado, no deployado
+### 3.4 Smart contracts (packages/blockchain) — ✅ deployado en Fuji
 
-- Solidity 0.8.24 (viaIR)
-- Hardhat 2.x
-- @nomicfoundation/hardhat-toolbox
-- OpenZeppelin contracts 5
-- Estándar ERC-3643 (T-REX) como base
-- ethers v6
-- TypeChain
-- hardhat-gas-reporter
-- solidity-coverage
+- Solidity 0.8.24 (viaIR habilitado, `optimizer_runs = 200`)
+- **Foundry** (forge + cast + anvil) — migración desde Hardhat por velocidad de tests (~16ms para 141 tests) e integración nativa con `vm.sign` para flujos EIP-712
+- forge-std (testing helpers)
+- OpenZeppelin contracts v5.6.1 (Ownable, AccessControl, ERC20, Pausable, EIP712, ECDSA, ReentrancyGuard, SafeERC20)
+- Arquitectura ERC-3643 (T-REX) con identity registry separado del token y módulos de compliance enchufables
+- **141 tests** Foundry across 8 suites, 100% pass
 
 ### 3.5 Mock blockchain SDK (packages/sdk)
 
@@ -168,21 +165,23 @@ Plataforma de **tokenización y mercado secundario regulado** para participacion
 
 ## 4. Componentes del sistema
 
-### 4.1 Smart contracts
+### 4.1 Smart contracts (deployados en Fuji 43113)
 
-- IdentityRegistry
-- ClaimIssuer
-- ComplianceRegistry
-- HoldingPeriodModule
-- MaxHoldersModule
-- JurisdictionModule
-- MaxInvestmentModule
-- SecurityToken (ERC-3643)
-- TokenFactory
-- OrderBook
-- Settlement
-- Escrow
-- MockUSDC
+| Contrato                     | Address Fuji                                 | Status                                           |
+| ---------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| IdentityRegistry             | `0x8Ca947A8c9714548eCe376a879D6755048018A82` | ✅                                               |
+| ComplianceManager            | `0x8Db4A89761b208Da299dB9f1979252093A56C45A` | ✅                                               |
+| HoldingPeriodModule          | (deploy on demand)                           | ✅ código + tests                                |
+| MaxHoldersModule             | (deploy on demand)                           | ✅ código + tests                                |
+| JurisdictionModule           | (deploy on demand)                           | ✅ código + tests                                |
+| SecurityToken (ERC-3643-ish) | desplegado por factory por oferta            | ✅                                               |
+| TokenFactory                 | `0x500B3F119E09fA4503f7fE8D5724Ca7776257956` | ✅                                               |
+| Settlement                   | `0x491BCC419E8Dd90d1783c234151c5B57A0Dc2A2A` | ✅                                               |
+| MockUSDC                     | `0x31E5aA694baebF0420170bD9b132F9b5c4b38A83` | ✅ (testnet only)                                |
+| ClaimIssuer                  | —                                            | 🟡 pendiente                                     |
+| MaxInvestmentModule          | —                                            | 🟡 pendiente                                     |
+| OrderBook on-chain           | —                                            | 🟡 no necesario (matching off-chain con EIP-712) |
+| Escrow                       | —                                            | 🟡 no necesario (settlement atómico inmediato)   |
 
 ### 4.2 Endpoints API (22)
 
@@ -367,6 +366,10 @@ Plataforma de **tokenización y mercado secundario regulado** para participacion
 - Architecture viz orbital (radial timeline interactivo)
 - Logo del dashboard navega al portal correcto
 - MarketingNav consciente de sesión
+- **Smart contracts ERC-3643 deployados en Avalanche Fuji** (IdentityRegistry, ComplianceManager, TokenFactory, Settlement, MockUSDC) — 141 tests Foundry verde
+- **3 módulos de compliance** (HoldingPeriod, MaxHolders, Jurisdiction) enchufables al ComplianceManager
+- **Demo flow end-to-end on-chain** ejecutado: KYC oracle → factory deploy de oferta → mint primario → 2 firmas EIP-712 → settlement atómico con fee — todo en TXs reales verificables en Snowtrace (ver [deployment.md](./deployment.md))
+- **Frontend hooks live**: `useKycStatus`, `useTokenHolding`, `OnChainStatusCard` leyendo state real desde Fuji vía wagmi/viem (no mock)
 
 ### 9.2 Mock o placeholder (no son datos reales)
 
@@ -381,9 +384,12 @@ Plataforma de **tokenización y mercado secundario regulado** para participacion
 
 ### 9.3 Pendiente
 
-- Deploy real de smart contracts a Avalanche Fuji
-- Tests unitarios de smart contracts (Hardhat)
-- Auditoría de smart contracts
+- ~~Deploy real de smart contracts a Avalanche Fuji~~ ✅ hecho
+- ~~Tests unitarios de smart contracts~~ ✅ 141 tests Foundry verde
+- Verificación de contratos en Snowtrace (subir source code para auditabilidad pública)
+- Adapter real de Avalanche en `packages/sdk` (hoy backend usa mock; el adapter swap haría que orderbook + matching settlee a chain real)
+- Módulos pendientes: `MaxInvestmentModule`, `ClaimIssuer`
+- Auditoría de smart contracts (formal, post-hackathon — recomendado Halborn/OpenZeppelin)
 - Integración con KYC provider real (Truora / Mati / Sumsub)
 - Workers BullMQ corriendo persistentes (hoy se invocan manualmente)
 - WalletConnect mobile QR (requiere Reown project ID)
