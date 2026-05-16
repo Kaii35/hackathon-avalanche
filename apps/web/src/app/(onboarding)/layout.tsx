@@ -24,7 +24,7 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-mesh opacity-70" />
       <div className="container flex min-h-screen flex-col">
         <header className="flex h-14 items-center justify-between">
-          <Link href="/" aria-label="Mercado IFC — inicio">
+          <Link href="/" aria-label="Arca — inicio">
             <Logo size={26} />
           </Link>
           <Link href="/login" className="text-xs text-foreground-tertiary hover:text-foreground">

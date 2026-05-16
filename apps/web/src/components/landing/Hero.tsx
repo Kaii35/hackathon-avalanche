@@ -79,9 +79,7 @@ export function Hero() {
                 <span className="h-2.5 w-2.5 rounded-full bg-foreground-disabled/40" />
                 <span className="h-2.5 w-2.5 rounded-full bg-foreground-disabled/40" />
               </div>
-              <span className="text-xs text-foreground-tertiary tabular">
-                mercado-ifc.app/investor
-              </span>
+              <span className="text-xs text-foreground-tertiary tabular">arca.mx/investor</span>
               <span className="text-xs text-foreground-tertiary">●</span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">

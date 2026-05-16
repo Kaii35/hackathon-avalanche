@@ -50,6 +50,12 @@ enum NotificationType {
   offering_active
 }
 
+enum AdminInviteStatus {
+  pending
+  consumed
+  revoked
+}
+
 model User {
   id             String         @id @default(uuid()) @db.Uuid
   email          String         @unique
@@ -256,4 +262,23 @@ model ProcessedEvent {
   processedAt DateTime @default(now()) @map("processed_at")
 
   @@map("processed_events")
+}
+
+/// Pre-registration list of authorized admin emails. An invite must exist
+/// (status='pending') for a user to register with role='admin'. On register,
+/// the invite is marked 'consumed' and linked to the new user. Existing admins
+/// can issue new invites from the admin panel. Revoke = soft-delete.
+model AdminInvite {
+  id            String             @id @default(uuid()) @db.Uuid
+  email         String             @unique
+  status        AdminInviteStatus  @default(pending)
+  note          String?
+  invitedById   String?            @map("invited_by_id") @db.Uuid
+  consumedById  String?            @map("consumed_by_id") @db.Uuid
+  consumedAt    DateTime?          @map("consumed_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("admin_invites")
 }

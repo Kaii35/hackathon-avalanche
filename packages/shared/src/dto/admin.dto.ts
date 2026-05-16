@@ -57,3 +57,27 @@ export interface AuditLogEntryDto {
   txHash: string | null;
   createdAt: string;
 }
+
+// — Admin invites (pre-registration list for admin accounts) —
+
+export const CreateAdminInviteSchema = z.object({
+  email: z
+    .string()
+    .email('Email inválido')
+    .transform((v) => v.trim().toLowerCase()),
+  note: z.string().trim().max(500, 'Nota demasiado larga').optional(),
+});
+export type CreateAdminInviteDto = z.infer<typeof CreateAdminInviteSchema>;
+
+export type AdminInviteStatus = 'pending' | 'consumed' | 'revoked';
+
+export interface AdminInviteDto {
+  id: string;
+  email: string;
+  status: AdminInviteStatus;
+  note: string | null;
+  invitedBy: { email: string; displayName: string } | null;
+  consumedBy: { email: string; displayName: string } | null;
+  consumedAt: string | null;
+  createdAt: string;
+}

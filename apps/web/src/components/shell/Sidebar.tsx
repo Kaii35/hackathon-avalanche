@@ -21,6 +21,7 @@ import {
   PieChart,
   Coins,
   Vote,
+  MailPlus,
 } from 'lucide-react';
 import { cn } from '@hack/ui';
 import { Button } from '@hack/ui';
@@ -77,6 +78,7 @@ const adminNav: NavSection[] = [
       { label: 'Inversionistas', href: '/admin/investors', icon: Users },
       { label: 'Compliance', href: '/admin/compliance', icon: Shield },
       { label: 'Jurisdicciones', href: '/admin/compliance/jurisdictions', icon: Globe },
+      { label: 'Invitaciones', href: '/admin/invites', icon: MailPlus },
       { label: 'Audit log', href: '/admin/audit-log', icon: History },
     ],
   },

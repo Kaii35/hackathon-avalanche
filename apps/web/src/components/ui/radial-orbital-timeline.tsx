@@ -10,7 +10,10 @@ export interface OrbitalTimelineItem {
   date: string;
   content: string;
   category: string;
-  icon: React.ElementType;
+  // ComponentType (not ElementType) so TS knows the rendered component
+  // accepts `size` and `className` props — `ElementType` is too broad and
+  // narrows the inferred prop type to `never`, breaking <Icon size={16} />.
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   relatedIds: number[];
   status: 'completed' | 'in-progress' | 'pending';
   energy: number;

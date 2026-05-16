@@ -4,7 +4,9 @@ This file is loaded into every Claude Code session opened in this repo. Keep it 
 
 ## What this project is
 
-Mercado secundario regulado de participaciones IFC sobre Avalanche, con compliance CNBV embebido a nivel de smart contract. Cliente piloto: Arkangeles. Stack: Next.js + TypeScript + Hardhat + Solidity + viem.
+**Arca** — mercado secundario regulado de participaciones IFC sobre Avalanche, con compliance CNBV embebido a nivel de smart contract. Cliente piloto: Arkangeles. Stack: Next.js + TypeScript + Hardhat + Solidity + viem.
+
+Brand convention: **ARCA** (all caps) for logo/wordmark and large headers; **Arca** (title case) for body text, descriptions, and toast messages.
 
 Read [ARCHITECTURE.md](./ARCHITECTURE.md) for the full design and [docs/](./docs/) for compliance and trading flows.
 
@@ -24,13 +26,13 @@ docs/                Architecture, compliance, trading, regulatory
 
 This repo defines specialized subagents under `.claude/agents/`. **Delegate** to them when the task fits:
 
-| Agent | Scope |
-|-------|-------|
-| `solidity-engineer` | Anything under `packages/contracts/` |
-| `frontend-engineer` | Anything under `apps/web/` and `packages/ui/` |
-| `backend-engineer` | API routes, Prisma, KYC, matching engine, indexer |
+| Agent                 | Scope                                                     |
+| --------------------- | --------------------------------------------------------- |
+| `solidity-engineer`   | Anything under `packages/contracts/`                      |
+| `frontend-engineer`   | Anything under `apps/web/` and `packages/ui/`             |
+| `backend-engineer`    | API routes, Prisma, KYC, matching engine, indexer         |
 | `compliance-reviewer` | Read-only review before merge of regulator-facing changes |
-| `pitch-builder` | Pitch deck, demo script, judge-facing artifacts |
+| `pitch-builder`       | Pitch deck, demo script, judge-facing artifacts           |
 
 Spawn multiple in parallel when the work is independent (e.g., contract change + matching frontend update).
 

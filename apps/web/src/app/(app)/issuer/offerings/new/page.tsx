@@ -23,6 +23,10 @@ import {
 } from '@hack/ui';
 import { ChevronLeft, ChevronRight, FileUp, ShieldCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { api, ApiError } from '@/lib/client/api';
+import { JURISDICTION_MX, type OfferingResponseDto } from '@hack/shared';
+const JURISDICTION_US = 840;
+const JURISDICTION_ES = 724;
 
 const STEPS = [
   { label: 'Básicos', description: 'Identidad' },
@@ -78,13 +82,77 @@ export default function CreateOfferingPage() {
   const prev = () => setStepIdx((i) => Math.max(i - 1, 0));
 
   const onPublish = async () => {
+    const f = methods.getValues();
+
+    // Map UI flags → ISO 3166-1 numeric codes the contracts expect.
+    const allowedJurisdictions = [
+      f.jurisdictionMX && JURISDICTION_MX,
+      f.jurisdictionUS && JURISDICTION_US,
+      f.jurisdictionES && JURISDICTION_ES,
+    ].filter((x): x is number => Boolean(x));
+
+    if (allowedJurisdictions.length === 0) {
+      toast.error('Selecciona al menos una jurisdicción permitida.');
+      return;
+    }
+    if (!f.name || f.name.length < 3) {
+      toast.error('El nombre de la oferta es muy corto.');
+      return;
+    }
+    if (!f.symbol || f.symbol.length < 2) {
+      toast.error('El símbolo es muy corto.');
+      return;
+    }
+    if (!f.description || f.description.length < 20) {
+      toast.error('La descripción debe tener al menos 20 caracteres.');
+      return;
+    }
+
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1100));
-    setSubmitting(false);
-    toast.success('Oferta publicada y desplegada en Fuji', {
-      description: `Token deployado en 0x4b3c…6b5c`,
-    });
-    router.push('/issuer/offerings');
+    try {
+      const payload = {
+        // issuerId is resolved server-side from the authenticated user
+        name: f.name,
+        symbol: f.symbol.toUpperCase(),
+        sector: f.sector,
+        description: f.description,
+        // Until Pinata is wired we send a stable placeholder so audit logs
+        // and UI can still link to "the prospectus". Empty string is also
+        // accepted by the loosened schema.
+        prospectusIpfs: f.prospectus ? `pending-upload:${f.symbol.toUpperCase()}` : '',
+        totalSupply: String(f.totalSupply),
+        pricePerUnit: String(f.pricePerUnit),
+        lockupUntil: new Date(f.lockupUntil).toISOString(),
+        maxHolders: Number(f.maxHolders),
+        allowedJurisdictions,
+      };
+
+      const offering = await api.call<OfferingResponseDto>('/api/offerings', {
+        method: 'POST',
+        body: payload,
+      });
+
+      if (offering.tokenAddress) {
+        const short = `${offering.tokenAddress.slice(0, 6)}…${offering.tokenAddress.slice(-4)}`;
+        toast.success('Oferta publicada y desplegada en Fuji', {
+          description: `Token: ${short}`,
+        });
+      } else {
+        toast.success('Oferta guardada como borrador', {
+          description: 'El deploy on-chain falló o está pendiente. Revisa el audit log.',
+        });
+      }
+      router.push(`/issuer/offerings/${offering.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const payload = err.payload as { error?: { message?: string } } | undefined;
+        toast.error(payload?.error?.message ?? `No pudimos crear la oferta (HTTP ${err.status})`);
+      } else {
+        toast.error(err instanceof Error ? err.message : 'Error de red. Intenta de nuevo.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

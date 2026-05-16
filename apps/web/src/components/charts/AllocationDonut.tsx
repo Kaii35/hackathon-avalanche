@@ -1,47 +1,24 @@
 'use client';
 
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import dynamic from 'next/dynamic';
+import type { ComponentProps } from 'react';
+import type { AllocationDonut as AllocationDonutType } from './AllocationDonutInner';
 
-const COLORS = ['#2A5BFF', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4', '#F472B6'];
-const fmt = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  maximumFractionDigits: 0,
-});
+/**
+ * Lazy wrapper around the recharts-based AllocationDonut. Same rationale
+ * as [AreaTrend.tsx](./AreaTrend.tsx) — recharts is too heavy to ship in
+ * the initial bundle for routes where the chart sits below the fold.
+ */
+const LazyAllocationDonut = dynamic(
+  () => import('./AllocationDonutInner').then((m) => m.AllocationDonut),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full animate-pulse rounded-full bg-elevated/40" aria-hidden />
+    ),
+  },
+) as typeof AllocationDonutType;
 
-export function AllocationDonut({ data }: { data: Array<{ label: string; value: number }> }) {
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          data={data}
-          dataKey="value"
-          nameKey="label"
-          innerRadius="55%"
-          outerRadius="80%"
-          paddingAngle={2}
-          stroke="none"
-        >
-          {data.map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={{
-            background: 'hsl(222 18% 13%)',
-            border: '1px solid hsl(222 14% 18%)',
-            borderRadius: 8,
-            fontSize: 12,
-            color: 'hsl(0 0% 98%)',
-          }}
-          formatter={(v: number, n: string) => [fmt.format(v), n]}
-        />
-        <Legend
-          wrapperStyle={{ fontSize: 12, color: '#a1a1aa', paddingTop: 12 }}
-          iconSize={10}
-          iconType="circle"
-        />
-      </PieChart>
-    </ResponsiveContainer>
-  );
+export function AllocationDonut(props: ComponentProps<typeof AllocationDonutType>) {
+  return <LazyAllocationDonut {...props} />;
 }

@@ -1,0 +1,1394 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>ARCA · Marco normativo y propuesta de valor para Arkangeles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --brand: #2a5bff;
+        --brand-light: #5c82ff;
+        --brand-dark: #1740cc;
+        --brand-deep: #0a1e6b;
+        --accent: #7b4fff;
+        --canvas: #fafbfc;
+        --surface: #ffffff;
+        --ink: #0f172a;
+        --ink-soft: #1e293b;
+        --muted: #475569;
+        --muted-soft: #64748b;
+        --border: #e2e8f0;
+        --border-soft: #eef1f5;
+        --success: #059669;
+        --warning: #d97706;
+        --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.04);
+        --shadow-card:
+          0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -8px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+        font-size: 11pt;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page {
+        size: A4;
+        margin: 14mm 14mm;
+      }
+
+      .page {
+        /* Sections flow naturally now — forcing `page-break-after: always`
+           on every section left the last page of each "1.2-page" section
+           almost empty. The cover keeps its own forced break (rule below)
+           so it always stands alone; everything else lets the print engine
+           pack pages tightly. */
+        padding: 0;
+      }
+      .cover {
+        page-break-after: always;
+        break-after: page;
+      }
+
+      /* Keep atomic blocks together so a 3-column grid or a comparison row
+         doesn't get orphaned on a near-empty page. `break-inside` is the
+         modern CSS3 property; `page-break-inside` is the legacy alias still
+         needed by some print engines (Chrome honors both). */
+      .pillars,
+      .benefits,
+      .step,
+      .obligation,
+      .card,
+      .quote,
+      .cta,
+      table.compare,
+      .section-head {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      h3,
+      h4 {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      /* ---------- Cover ---------- */
+      .cover {
+        background:
+          radial-gradient(
+            circle at 80% 10%,
+            rgba(123, 79, 255, 0.25) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 15% 95%,
+            rgba(42, 91, 255, 0.35) 0%,
+            transparent 55%
+          ),
+          linear-gradient(180deg, #050a1f 0%, #0b1b4d 100%);
+        color: #fff;
+        /* A4 usable height ≈ 269mm after 14mm × 2 page margins. Slight buffer
+           so any sub-pixel rounding never bleeds onto a second page. */
+        min-height: 260mm;
+        max-height: 268mm;
+        padding: 24mm 20mm 18mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+      .cover::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
+      }
+      .cover-eyebrow {
+        font-size: 9pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.32em;
+        color: rgba(255, 255, 255, 0.55);
+        margin-bottom: 8mm;
+      }
+      .cover-wordmark {
+        font-size: 88pt;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        line-height: 1;
+        text-transform: uppercase;
+        background: linear-gradient(
+          180deg,
+          #ffffff 0%,
+          #c7d2fe 60%,
+          #818cf8 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin: 0;
+      }
+      .cover-title {
+        font-size: 19pt;
+        font-weight: 600;
+        line-height: 1.25;
+        max-width: 130mm;
+        margin: 10mm 0 5mm;
+        letter-spacing: -0.01em;
+      }
+      .cover-sub {
+        font-size: 11pt;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.72);
+        max-width: 140mm;
+        margin: 0;
+        line-height: 1.55;
+      }
+      .cover-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        font-size: 9pt;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.04em;
+      }
+      .cover-foot strong {
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 600;
+      }
+      .cover-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8mm;
+        margin-top: 10mm;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        padding-top: 6mm;
+      }
+      .cover-meta-item .k {
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 2mm;
+      }
+      .cover-meta-item .v {
+        font-size: 11pt;
+        color: #fff;
+        font-weight: 500;
+      }
+
+      /* ---------- Section headers ---------- */
+      .section-head {
+        padding: 6mm 0 4mm;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 6mm;
+        /* Breathing room above so when a section starts mid-page (because
+           the previous one didn't fill a full page), there's a clear visual
+           separation. First section after cover starts at top of page so
+           the margin doesn't waste space there. */
+        margin-top: 10mm;
+      }
+      .page:first-of-type + .page .section-head,
+      .cover + .page .section-head {
+        margin-top: 0;
+      }
+      .section-head .num {
+        display: inline-block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8.5pt;
+        color: var(--brand);
+        letter-spacing: 0.2em;
+        font-weight: 600;
+        margin-bottom: 3mm;
+      }
+      .section-head h2 {
+        font-size: 22pt;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 3mm;
+        color: var(--ink);
+      }
+      .section-head .lede {
+        font-size: 11.5pt;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 165mm;
+        margin: 0;
+        font-weight: 400;
+      }
+
+      /* ---------- Generic prose ---------- */
+      p {
+        margin: 0 0 4mm;
+        color: var(--ink-soft);
+      }
+      strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      em {
+        color: var(--brand-dark);
+        font-style: normal;
+        font-weight: 600;
+      }
+      .lead {
+        font-size: 12pt;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      h3 {
+        font-size: 14pt;
+        font-weight: 700;
+        margin: 6mm 0 2.5mm;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+      }
+      h4 {
+        font-size: 11pt;
+        font-weight: 600;
+        margin: 5mm 0 1.5mm;
+        color: var(--ink);
+      }
+
+      /* ---------- Brand pill / eyebrow ---------- */
+      .eyebrow {
+        display: inline-block;
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--brand);
+        font-weight: 600;
+        padding: 1.5mm 3mm;
+        border: 1px solid rgba(42, 91, 255, 0.25);
+        background: rgba(42, 91, 255, 0.06);
+        border-radius: 999px;
+        margin-bottom: 4mm;
+      }
+
+      /* ---------- Cards ---------- */
+      .card {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 4mm;
+        padding: 6mm 6mm 5mm;
+        box-shadow: var(--shadow-soft);
+        margin-bottom: 5mm;
+      }
+      .card-title {
+        font-size: 13pt;
+        font-weight: 700;
+        margin: 0 0 2mm;
+        color: var(--ink);
+      }
+      .card-sub {
+        font-size: 10pt;
+        color: var(--muted);
+        margin: 0 0 3mm;
+      }
+      .card-accent {
+        border-left: 3pt solid var(--brand);
+      }
+
+      /* ---------- Pillar grid (3 columns) ---------- */
+      .pillars {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4mm;
+        margin: 6mm 0;
+      }
+      .pillar {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 4mm;
+        padding: 5mm 5mm 4mm;
+        box-shadow: var(--shadow-soft);
+      }
+      .pillar .icon {
+        width: 8mm;
+        height: 8mm;
+        border-radius: 2mm;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+        color: #fff;
+        font-size: 13pt;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 3mm;
+        font-weight: 700;
+      }
+      .pillar h4 {
+        font-size: 11pt;
+        font-weight: 700;
+        margin: 0 0 2mm;
+        color: var(--ink);
+      }
+      .pillar p {
+        font-size: 9.5pt;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      /* ---------- Steps ---------- */
+      .step {
+        display: grid;
+        grid-template-columns: 14mm 1fr;
+        gap: 4mm;
+        margin-bottom: 5mm;
+      }
+      .step-num {
+        width: 10mm;
+        height: 10mm;
+        border-radius: 50%;
+        background: var(--brand);
+        color: #fff;
+        font-weight: 700;
+        font-size: 12pt;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .step h4 {
+        margin: 0 0 1.5mm;
+        font-size: 12pt;
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .step p {
+        margin: 0;
+        font-size: 10.5pt;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      /* ---------- Legal obligation block ---------- */
+      .obligation {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 4mm;
+        padding: 5mm 5mm 4mm;
+        margin-bottom: 4mm;
+        box-shadow: var(--shadow-soft);
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      .obligation-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 3mm;
+        margin-bottom: 3mm;
+        padding-bottom: 2.5mm;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .obligation-chip {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 7.5pt;
+        font-weight: 600;
+        color: var(--brand);
+        background: rgba(42, 91, 255, 0.08);
+        padding: 1mm 2.5mm;
+        border-radius: 1.5mm;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .obligation h3 {
+        margin: 0;
+        font-size: 13pt;
+        font-weight: 700;
+        color: var(--ink);
+        flex: 1;
+      }
+      .obligation .row {
+        display: grid;
+        grid-template-columns: 28mm 1fr;
+        gap: 3mm;
+        margin-bottom: 2.5mm;
+        align-items: flex-start;
+      }
+      .obligation .row:last-child {
+        margin-bottom: 0;
+      }
+      .obligation .label {
+        font-size: 7.5pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted-soft);
+        padding-top: 0.5mm;
+      }
+      .obligation .text {
+        font-size: 10pt;
+        color: var(--ink-soft);
+        line-height: 1.45;
+      }
+      .obligation .arca-fix {
+        background: linear-gradient(
+          90deg,
+          rgba(42, 91, 255, 0.06) 0%,
+          rgba(42, 91, 255, 0) 100%
+        );
+        padding: 3mm 4mm;
+        border-radius: 2mm;
+        border-left: 2pt solid var(--brand);
+        margin-top: 1mm;
+      }
+      .obligation .arca-fix .label {
+        color: var(--brand);
+      }
+      .obligation .arca-fix .text {
+        color: var(--ink);
+      }
+
+      /* ---------- Comparison table ---------- */
+      table.compare {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 6mm 0;
+        font-size: 10pt;
+        border-radius: 4mm;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-soft);
+        background: var(--surface);
+      }
+      table.compare thead th {
+        background: var(--ink);
+        color: #fff;
+        font-weight: 600;
+        text-align: left;
+        padding: 4mm 5mm;
+        font-size: 10pt;
+        letter-spacing: 0.02em;
+      }
+      table.compare thead th:nth-child(3) {
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+      }
+      table.compare tbody td {
+        padding: 4mm 5mm;
+        vertical-align: top;
+        border-top: 1px solid var(--border-soft);
+        line-height: 1.45;
+      }
+      table.compare tbody tr:first-child td {
+        border-top: none;
+      }
+      table.compare tbody td:first-child {
+        font-weight: 600;
+        color: var(--ink);
+        width: 32%;
+      }
+      table.compare tbody td:nth-child(2) {
+        color: var(--muted);
+        width: 34%;
+      }
+      table.compare tbody td:nth-child(3) {
+        color: var(--ink);
+        background: rgba(42, 91, 255, 0.04);
+        width: 34%;
+      }
+
+      /* ---------- Quote ---------- */
+      .quote {
+        margin: 6mm 0;
+        padding: 5mm 6mm;
+        border-left: 3pt solid var(--brand);
+        background: linear-gradient(
+          90deg,
+          rgba(42, 91, 255, 0.04) 0%,
+          rgba(42, 91, 255, 0) 100%
+        );
+        font-size: 11pt;
+        color: var(--ink-soft);
+        line-height: 1.55;
+        border-radius: 0 2mm 2mm 0;
+      }
+
+      /* ---------- Benefit list ---------- */
+      .benefits {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4mm;
+        margin-top: 5mm;
+      }
+      .benefit {
+        border: 1px solid var(--border);
+        border-radius: 3mm;
+        padding: 4mm 5mm;
+        background: var(--surface);
+      }
+      .benefit .check {
+        display: inline-flex;
+        width: 5mm;
+        height: 5mm;
+        border-radius: 50%;
+        background: rgba(5, 150, 105, 0.12);
+        color: var(--success);
+        align-items: center;
+        justify-content: center;
+        font-size: 9pt;
+        font-weight: 700;
+        margin-right: 2mm;
+        vertical-align: middle;
+      }
+      .benefit h4 {
+        margin: 0 0 1mm;
+        display: inline-block;
+        vertical-align: middle;
+        font-size: 11pt;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .benefit p {
+        margin: 2mm 0 0;
+        font-size: 9.5pt;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      /* ---------- Closing ---------- */
+      .cta {
+        margin-top: 12mm;
+        padding: 8mm;
+        background: linear-gradient(
+          135deg,
+          var(--brand-deep) 0%,
+          var(--brand) 100%
+        );
+        color: #fff;
+        border-radius: 5mm;
+        text-align: center;
+      }
+      .cta h3 {
+        color: #fff;
+        font-size: 18pt;
+        margin: 0 0 3mm;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .cta p {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 11pt;
+        margin: 0 0 5mm;
+        max-width: 130mm;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .cta .pill {
+        display: inline-block;
+        padding: 2mm 5mm;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 10pt;
+        letter-spacing: 0.02em;
+      }
+
+      /* ---------- Footer (every printed page) ---------- */
+      .doc-footer {
+        position: fixed;
+        bottom: 8mm;
+        left: 14mm;
+        right: 14mm;
+        font-size: 7.5pt;
+        color: var(--muted-soft);
+        display: flex;
+        justify-content: space-between;
+        letter-spacing: 0.08em;
+        border-top: 1px solid var(--border);
+        padding-top: 2mm;
+        text-transform: uppercase;
+        font-weight: 500;
+      }
+      .doc-footer.cover-foot-fixed {
+        display: none;
+      }
+
+      /* Don't show footer on cover */
+      .cover ~ .doc-footer {
+        display: flex;
+      }
+
+      /* Utility */
+      .muted {
+        color: var(--muted);
+      }
+      .mt-0 { margin-top: 0 !important; }
+      .mt-2 { margin-top: 2mm; }
+      .mt-4 { margin-top: 4mm; }
+      .mt-6 { margin-top: 6mm; }
+      .small {
+        font-size: 9pt;
+      }
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .center { text-align: center; }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+         COVER
+    ============================================================ -->
+    <section class="page cover">
+      <div>
+        <div class="cover-eyebrow">Documento estratégico · Confidencial</div>
+        <h1 class="cover-wordmark">ARCA</h1>
+        <h2 class="cover-title">
+          Marco normativo y propuesta de valor para Arkangeles.
+        </h2>
+        <p class="cover-sub">
+          Cómo Arkangeles puede adoptar blockchain para sus servicios de fondeo e
+          inversión cumpliendo cada obligación de CNBV, UIF y Ley Fintech — sin que
+          el equipo legal o de operaciones tenga que mover un dedo extra.
+        </p>
+
+        <div class="cover-meta-grid">
+          <div class="cover-meta-item">
+            <div class="k">Producto</div>
+            <div class="v">Mercado Secundario Regulado</div>
+          </div>
+          <div class="cover-meta-item">
+            <div class="k">Stack</div>
+            <div class="v">Avalanche · ERC-3643 · Next.js</div>
+          </div>
+          <div class="cover-meta-item">
+            <div class="k">Cliente piloto</div>
+            <div class="v">Arkangeles IFC</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cover-foot">
+        <span><strong>Arca</strong> · Mercado Secundario para IFCs</span>
+        <span>Hackathon Avalanche LATAM 2026</span>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 1 — La oportunidad
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">01 · LA OPORTUNIDAD</div>
+        <h2>El secundario que su modelo ya pide a gritos.</h2>
+        <p class="lede">
+          Hoy un inversionista que entra a una oferta de Arkangeles queda atrapado
+          5 a 10 años sin poder vender su participación. Eso deprime la demanda
+          primaria, limita el ticket promedio y los obliga a competir más caro por
+          cada nuevo inversionista.
+        </p>
+      </div>
+
+      <div class="quote">
+        <strong>El problema en una línea:</strong> sin liquidez secundaria, su
+        capital captado depende del 100% del compromiso emocional del
+        inversionista. Con liquidez, la primaria se vuelve más fácil porque
+        ofrecen una salida real.
+      </div>
+
+      <h3>Qué cambia con un mercado secundario tokenizado</h3>
+      <p>
+        El valor no está en "usar blockchain". El valor está en que ahora las
+        participaciones que ustedes emiten se pueden transferir entre inversionistas
+        verificados con una orden firmada, sin papeleo, sin reescribir un Excel y
+        <em>sin abrir un agujero regulatorio</em>. La regulación se cumple por
+        diseño: el smart contract no permite que una transferencia suceda si
+        viola las reglas que CNBV ya les exige hoy.
+      </p>
+      <p>
+        Es el mismo cumplimiento que ya hacen — pero automatizado, auditable y
+        embebido a nivel código. Lo que ustedes hoy revisan manualmente cada
+        operación, el contrato lo verifica en milisegundos antes de permitir
+        cualquier movimiento.
+      </p>
+
+      <h3>Por qué este momento</h3>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="icon">1</div>
+          <h4>Ley Fintech ya madura</h4>
+          <p>
+            CNBV lleva años regulando IFCs. El marco existe; lo que faltaba era
+            tecnología que lo respete por defecto.
+          </p>
+        </div>
+        <div class="pillar">
+          <div class="icon">2</div>
+          <h4>Stack listo</h4>
+          <p>
+            ERC-3643 (estándar de security tokens regulados) y Avalanche permiten
+            compliance on-chain con costos de centavos por operación.
+          </p>
+        </div>
+        <div class="pillar">
+          <div class="icon">3</div>
+          <h4>Sus inversionistas lo piden</h4>
+          <p>
+            La nueva generación de inversionistas no quiere instrumentos sin
+            salida. Ofrecerles liquidez es ventaja competitiva inmediata.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 2 — Qué es ARCA
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">02 · QUÉ ES ARCA</div>
+        <h2>Una plataforma compliance-native, no un "DeFi para IFCs".</h2>
+        <p class="lede">
+          Arca es la plataforma web full-stack que permite a una IFC como
+          Arkangeles emitir participaciones tokenizadas y operar un mercado
+          secundario regulado entre inversionistas calificados — con identidad
+          digital, smart contracts y un audit log inmutable que CNBV puede
+          revisar en cualquier momento.
+        </p>
+      </div>
+
+      <h3>Cómo lo hacemos</h3>
+      <p>
+        Combinamos una capa <strong>full-stack tradicional</strong> (Next.js +
+        backend + base de datos) con una capa <strong>blockchain</strong>
+        (Avalanche, contratos ERC-3643). La capa tradicional maneja la experiencia
+        de usuario, el almacenamiento de expedientes y la coordinación de procesos
+        — exactamente como cualquier plataforma fintech moderna. La capa blockchain
+        valida, registra y ejecuta las operaciones — y es la que garantiza el
+        cumplimiento normativo por diseño.
+      </p>
+
+      <div class="card card-accent">
+        <p class="card-title mt-0">Arquitectura en una frase</p>
+        <p class="muted small">
+          Los datos sensibles viven en bases de datos seguras bajo control de
+          Arkangeles. Las reglas de transferencia, identidad y compliance viven
+          en smart contracts inmutables. El usuario solo ve una plataforma web
+          limpia y rápida.
+        </p>
+      </div>
+
+      <h3>Tres pilares</h3>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="icon">★</div>
+          <h4>Identidad on-chain</h4>
+          <p>
+            Cada inversionista verificado se registra en un <em>IdentityRegistry</em>
+            on-chain con su jurisdicción, su nivel de acreditación y un hash de su
+            KYC. Sin esto, no puede operar.
+          </p>
+        </div>
+        <div class="pillar">
+          <div class="icon">✓</div>
+          <h4>Compliance embebido</h4>
+          <p>
+            El token no se transfiere si la operación viola límite de holders,
+            jurisdicción permitida, periodo de lockup o lista de wallets
+            congeladas. <em>El contrato lo bloquea automáticamente.</em>
+          </p>
+        </div>
+        <div class="pillar">
+          <div class="icon">↺</div>
+          <h4>Liquidez 24/7</h4>
+          <p>
+            Order book on-chain + settlement atómico. Las órdenes firmadas se
+            cruzan automáticamente entre inversionistas verificados sin
+            intermediarios manuales.
+          </p>
+        </div>
+      </div>
+
+      <h3>El flujo, en cuatro pasos</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h4>Arkangeles tokeniza una oferta</h4>
+          <p>
+            Desde el panel de emisor configura símbolo, supply, precio, jurisdicción
+            permitida, lockup y max holders. Un clic despliega el contrato ERC-3643
+            en Avalanche.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Inversionistas se verifican una sola vez</h4>
+          <p>
+            KYC vía Sumsub (ya integrado). Al aprobarse, se registran en
+            <em>IdentityRegistry</em> on-chain. Esa verificación les sirve para
+            cualquier oferta futura de Arkangeles.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>Operan en el secundario con cumplimiento automático</h4>
+          <p>
+            Compran y venden con órdenes firmadas (EIP-712). El contrato revisa
+            cumplimiento antes de cada transferencia. Settlement atómico contra
+            stablecoin (USDC).
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h4>Cap table y audit log siempre vivos</h4>
+          <p>
+            La cap table es la cadena — no hay reconciliación manual. Cada acción
+            administrativa queda en un audit log inmutable que CNBV puede revisar
+            en línea.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 3 — Marco legal en versión simple
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">03 · MARCO LEGAL</div>
+        <h2>Sí hay reglas. Y sí, son simples si las atacamos con tecnología.</h2>
+        <p class="lede">
+          Lo que parece intimidante en papel se vuelve trivial cuando el
+          compliance está embebido en el producto. Aquí va el marco aplicable,
+          una obligación a la vez, en español de a pie — y cómo Arca lo resuelve
+          sin que su equipo tenga que cargar el costo operativo.
+        </p>
+      </div>
+
+      <div class="quote">
+        <strong>Mensaje principal:</strong> Adoptar Arca no agrega obligaciones
+        legales nuevas a Arkangeles. Las que ya tienen como IFC se vuelven más
+        fáciles de cumplir, no más difíciles.
+      </div>
+
+      <!-- Obligación 1 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">Base</span>
+          <h3>Constitución en México</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            Para operar como Institución de Financiamiento Colectivo (IFC) bajo
+            Ley Fintech, la sociedad debe estar constituida en México
+            (típicamente como S.A. o SAPI de C.V.) y autorizada por la CNBV.
+            Esto no cambia al adoptar blockchain.
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            Arkangeles ya cumple esto. La adopción de Arca <strong>no requiere
+            crear una nueva entidad</strong>, ni mover operaciones offshore, ni
+            registrar nada nuevo ante CNBV. Es su misma autorización de IFC la
+            que respalda el producto.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            La plataforma se opera bajo la entidad legal de Arkangeles. Toda la
+            relación jurídica con el inversionista sigue siendo con la IFC; la
+            blockchain es solo el registro técnico.
+          </div>
+        </div>
+      </div>
+
+      <!-- Obligación 2 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">LFPIORPI</span>
+          <h3>Actividad Vulnerable</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            La Ley Federal para la Prevención e Identificación de Operaciones con
+            Recursos de Procedencia Ilícita (LFPIORPI) cataloga como "actividad
+            vulnerable" a quienes operan con activos virtuales y a las IFC. Esto
+            obliga a identificar al cliente, conservar expedientes y reportar
+            ciertas operaciones a la UIF (Unidad de Inteligencia Financiera).
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            Cada operación de fondeo o trading en Arca se considera actividad
+            vulnerable. Esto suena fuerte, pero solo significa que necesitamos
+            saber <strong>quién</strong> está detrás de cada wallet y
+            <strong>cuánto</strong> opera — algo que el modelo de IFC ya hacía.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            Nadie puede recibir tokens sin pasar por KYC y quedar registrado
+            en <em>IdentityRegistry</em> on-chain. Una wallet sin identidad
+            verificada simplemente no puede operar — el contrato rechaza la
+            transferencia.
+          </div>
+        </div>
+      </div>
+
+      <!-- Obligación 3 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">Art 17 fr. XVI</span>
+          <h3>LFPIORPI · Servicios de fondeo colectivo</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            El artículo 17, fracción XVI de LFPIORPI lista expresamente como
+            actividad vulnerable a los servicios de fondeo colectivo (crowdfunding
+            de inversión), independientemente del monto cuando se ofrecen al
+            público. Las IFC están bajo este supuesto.
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            Implica integrar expedientes de identificación por cliente, designar
+            oficial de cumplimiento, capacitar al personal, y presentar avisos a
+            la UIF cuando se superen ciertos umbrales económicos.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            El expediente KYC + audit log + historial completo de operaciones por
+            inversionista se generan solos a partir de los eventos on-chain.
+            Generar el aviso a la UIF se vuelve un export de una pantalla, no un
+            proyecto de un mes.
+          </div>
+        </div>
+      </div>
+
+      <!-- Obligación 4 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">UIF · 210 UMA</span>
+          <h3>Reportes por umbral a la UIF</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            Las operaciones que igualen o superen el equivalente a
+            <strong>210 UMA</strong> (Unidad de Medida y Actualización) deben
+            reportarse a la UIF como "operación relevante". Con la UMA 2026
+            (≈$113.14 MXN), el umbral son aproximadamente
+            <strong>$23,759 MXN por operación</strong>.
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            Cada vez que un inversionista hace una compra/venta que cruza ese
+            umbral, hay que generar un reporte estructurado para la UIF.
+            Manualmente, esto es una pesadilla de Excel y reconciliación entre
+            sistemas.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            El indexer on-chain marca automáticamente toda operación ≥ 210 UMA.
+            El sistema construye el reporte UIF prellenado con monto, contraparte,
+            wallet, KYC asociado y txHash inmutable. El oficial de cumplimiento
+            solo lo revisa y firma.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 3 (cont) — Obligaciones restantes
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">03 · MARCO LEGAL (cont.)</div>
+        <h2>Las obligaciones operativas — automatizadas en el contrato.</h2>
+        <p class="lede">
+          Las tres siguientes son las que más carga manual generan en una IFC
+          tradicional. En Arca son código, no procesos.
+        </p>
+      </div>
+
+      <!-- Obligación 5 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">Operativo</span>
+          <h3>Monitoreo de transacciones</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            La normativa AML/CFT exige sistemas de monitoreo capaces de detectar
+            patrones inusuales: estructuración (varios depósitos pequeños para
+            evadir umbrales), transferencias entre wallets relacionadas,
+            operaciones desde jurisdicciones de alto riesgo, etc.
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            En un mundo manual, esto requiere un equipo dedicado revisando
+            reportes, cruzando bases de datos y armando alertas a mano.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            El indexer escucha cada transferencia on-chain en tiempo real y
+            aplica reglas de detección configurables. Las alertas aparecen en
+            el panel de Compliance Admin <strong>antes</strong> de que la
+            operación cierre, no días después.
+          </div>
+        </div>
+      </div>
+
+      <!-- Obligación 6 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">UIF · estructurado</span>
+          <h3>Reportes por umbral</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            Además del umbral de 210 UMA, hay reportes mensuales acumulados,
+            reportes preventivos por operación inusual y reportes 24h por
+            operaciones que se considere intentaron evadir el umbral. Todos en
+            formato XML específico para la UIF.
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            Sin automatización, esto consume entre 20% y 40% del tiempo de un
+            equipo de compliance. Y un error tipográfico en un XML puede generar
+            sanciones.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            Cada categoría de reporte se genera desde una sola fuente de verdad
+            (el audit log on-chain + KYC en BD). Exportación en el formato XML
+            de la UIF directamente desde el panel admin, lista para enviar.
+          </div>
+        </div>
+      </div>
+
+      <!-- Obligación 7 -->
+      <div class="obligation">
+        <div class="obligation-head">
+          <span class="obligation-chip">Expedientes</span>
+          <h3>Almacenamiento de expedientes</h3>
+        </div>
+        <div class="row">
+          <div class="label">Qué exige</div>
+          <div class="text">
+            Conservar el expediente de identificación del cliente y la
+            documentación de cada operación por al menos
+            <strong>10 años</strong> a partir de la fecha de cierre. Disponible
+            para inspecciones de CNBV y UIF en cualquier momento.
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">Qué significa</div>
+          <div class="text">
+            Necesitan un sistema de archivo seguro, con control de acceso,
+            backups y trazabilidad de quién consultó qué. Y debe seguir vivo
+            aunque cambie el equipo o la plataforma.
+          </div>
+        </div>
+        <div class="row arca-fix">
+          <div class="label">Cómo lo hace Arca</div>
+          <div class="text">
+            El expediente KYC se cifra y se almacena con backups automáticos.
+            El historial de operaciones es la propia blockchain: inmutable,
+            siempre disponible, imposible de alterar — el mejor archivo legal
+            que se puede tener.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 4 — Comparativa
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">04 · COMPARATIVA</div>
+        <h2>Lo que hoy hacen a mano vs. lo que Arca hace solo.</h2>
+        <p class="lede">
+          Esta tabla es el resumen ejecutivo del documento. Es lo que sus
+          equipos legal y operativo van a sentir desde el día uno.
+        </p>
+      </div>
+
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Obligación</th>
+            <th>Sin Arca (manual)</th>
+            <th>Con Arca (automático)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>KYC y expediente del cliente</td>
+            <td>Recolección manual de documentos, revisión en hojas de cálculo, archivo físico o sistema separado.</td>
+            <td>Sumsub integrado. Verificación, expediente y registro on-chain en una sola sesión.</td>
+          </tr>
+          <tr>
+            <td>Validación de jurisdicción y acreditación</td>
+            <td>Verificación caso por caso al momento de cada operación. Riesgo de error humano.</td>
+            <td>El smart contract bloquea cualquier transferencia que viole las reglas. Imposible equivocarse.</td>
+          </tr>
+          <tr>
+            <td>Detección de umbrales (210 UMA)</td>
+            <td>Reconciliación periódica entre sistemas. Reportes pueden llegar tarde.</td>
+            <td>Detección en tiempo real. Alerta y reporte prellenado al instante.</td>
+          </tr>
+          <tr>
+            <td>Reportes a la UIF</td>
+            <td>Plantillas Excel + generación manual del XML. Varios días por mes.</td>
+            <td>Export con un clic desde el panel admin, formato UIF nativo.</td>
+          </tr>
+          <tr>
+            <td>Audit log para CNBV</td>
+            <td>Logs dispersos en bases de datos y correos. Difícil reconstruir.</td>
+            <td>Cadena de bloques inmutable. Cualquier inspector ve la verdad sin intermediarios.</td>
+          </tr>
+          <tr>
+            <td>Conservación 10 años</td>
+            <td>Backups + control de versiones + procedimiento de respaldo.</td>
+            <td>La blockchain es el archivo. No se pierde, no se altera, no caduca.</td>
+          </tr>
+          <tr>
+            <td>Cap table actualizada</td>
+            <td>Excel reconciliado contra movimientos. Lag de días.</td>
+            <td>La cadena ES la cap table. Cero lag, cero reconciliación.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="lead mt-6">
+        El cambio neto no es <em>"hacer cosas distintas"</em>. Es
+        <em>"que las cosas se hagan solas"</em>. El equipo de compliance pasa
+        de operar a supervisar.
+      </p>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 5 — Beneficios y trade-offs
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">05 · POR QUÉ ARKANGELES</div>
+        <h2>Lo que ganan, lo que cambia, lo que vale la pena.</h2>
+      </div>
+
+      <h3>Lo que ganan</h3>
+      <div class="benefits">
+        <div class="benefit">
+          <span class="check">✓</span>
+          <h4>Liquidez 24/7 para sus inversionistas</h4>
+          <p>
+            Salida real en cualquier momento (cumpliendo lockup y reglas). Su
+            ticket promedio sube porque el riesgo de "quedarse atrapado"
+            desaparece.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="check">✓</span>
+          <h4>Cap table siempre vivo</h4>
+          <p>
+            Adiós a reconciliar Excel cada semana. La blockchain es la fuente
+            de verdad. Reportes a accionistas con un clic.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="check">✓</span>
+          <h4>Compliance automático y auditable</h4>
+          <p>
+            CNBV puede revisar cualquier transferencia, en cualquier momento,
+            sin pedirles nada. Eso simplifica inspecciones y reduce riesgo
+            sancionatorio.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="check">✓</span>
+          <h4>Diferenciador competitivo</h4>
+          <p>
+            Ninguna otra IFC en México ofrece secundario regulado. Adoptarlo
+            primero los posiciona como el referente — y los pone delante de
+            inversionistas institucionales que ya operan con activos digitales.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="check">✓</span>
+          <h4>Menor carga operativa</h4>
+          <p>
+            El equipo de compliance se enfoca en supervisar y firmar — no en
+            generar reportes. Se traduce en menos contrataciones para escalar.
+          </p>
+        </div>
+        <div class="benefit">
+          <span class="check">✓</span>
+          <h4>Identidad reutilizable</h4>
+          <p>
+            Un inversionista verificado para una oferta no necesita reverificar
+            para la siguiente. Reduce la fricción de captación primaria.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="mt-6">Lo que cambia (los trade-offs honestos)</h3>
+      <div class="card">
+        <p class="card-title mt-0">Mayor complejidad técnica — que nosotros asumimos</p>
+        <p class="muted">
+          Sí, construir sobre blockchain es más complejo que sobre una base de
+          datos tradicional. Por eso ustedes no construyen — usan Arca como
+          plataforma. Toda la complejidad técnica (contratos, indexer,
+          settlement, gas) está abstraída detrás de un panel que se ve y se
+          comporta como cualquier dashboard moderno.
+        </p>
+      </div>
+      <div class="card">
+        <p class="card-title mt-0">Costos iniciales de integración</p>
+        <p class="muted">
+          La adopción inicial implica capacitar al equipo de Arkangeles en el
+          panel, alinear el flujo legal con el nuevo proceso técnico, y
+          coordinar el primer deploy de tokens en producción. Es un proyecto
+          de semanas, no de meses — y a partir de ahí el ahorro operativo se
+          paga solo.
+        </p>
+      </div>
+      <div class="card">
+        <p class="card-title mt-0">Adopción de stablecoins para settlement</p>
+        <p class="muted">
+          El settlement on-chain usa USDC (stablecoin regulada, 1:1 contra
+          dólar). En la fase inicial se puede operar contra MXN off-chain
+          y conciliar contra el smart contract. La migración a USDC nativo
+          es gradual y opcional.
+        </p>
+      </div>
+
+      <div class="quote mt-6">
+        <strong>El balance:</strong> los costos son finitos, conocidos y de
+        una sola vez. Los beneficios son permanentes y compuestos. La pregunta
+        no es <em>"¿podemos pagarlo?"</em>, es <em>"¿podemos darnos el lujo
+        de que un competidor lo adopte primero?"</em>.
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECCIÓN 6 — Cierre / próximos pasos
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">06 · PRÓXIMOS PASOS</div>
+        <h2>Tres conversaciones para ponerlo en marcha.</h2>
+        <p class="lede">
+          La adopción no es un big-bang. Está pensada para encajar con sus
+          procesos actuales en tres tracks paralelos.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h4>Track legal · 2 semanas</h4>
+          <p>
+            Alinear con su equipo legal y el oficial de cumplimiento el mapeo
+            entre obligaciones existentes y las pantallas/contratos de Arca.
+            Definir el flujo de aprobación de reportes UIF.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Track técnico · 3 semanas</h4>
+          <p>
+            Deploy de la plataforma con la marca de Arkangeles, integración
+            con su KYC actual (o adopción de Sumsub), prueba de extremo a
+            extremo en Avalanche Fuji (testnet) con su equipo operativo.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>Track piloto · 4 semanas</h4>
+          <p>
+            Primera oferta tokenizada con un universo limitado de
+            inversionistas calificados. Settlement controlado, monitoreo
+            cercano, ajustes finos. De aquí pasa a producción amplia.
+          </p>
+        </div>
+      </div>
+
+      <div class="cta">
+        <h3>Arkangeles + Arca</h3>
+        <p>
+          La primera IFC en México operando un mercado secundario regulado
+          on-chain. La narrativa de prensa, el diferenciador competitivo y el
+          camino más limpio para escalar el negocio — en un solo movimiento.
+        </p>
+        <span class="pill">Listos para empezar</span>
+      </div>
+
+      <p class="small muted center mt-6">
+        Este documento describe el alcance funcional de Arca y referencias al
+        marco normativo aplicable a IFCs en México. No constituye asesoría
+        legal vinculante; cualquier implementación debe validarse con el
+        equipo jurídico y el oficial de cumplimiento de Arkangeles.
+      </p>
+    </section>
+  </body>
+</html>

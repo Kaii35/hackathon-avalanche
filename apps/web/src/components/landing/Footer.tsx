@@ -7,12 +7,12 @@ export function Footer() {
       <div className="container py-14">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(3,_1fr)]">
           <div>
-            <Link href="/" aria-label="Mercado IFC — inicio">
+            <Link href="/" aria-label="Arca — inicio">
               <Logo size={26} />
             </Link>
             <p className="mt-3 max-w-sm text-sm text-foreground-secondary">
-              Mercado secundario regulado de participaciones IFC sobre Avalanche. White-label para
-              Instituciones de Financiamiento Colectivo en México.
+              Arca — mercado secundario regulado de participaciones IFC sobre Avalanche. White-label
+              para Instituciones de Financiamiento Colectivo en México.
             </p>
             <p className="mt-4 text-xs text-foreground-tertiary">
               Demo · Avalanche Fuji · No constituye oferta pública de valores.
@@ -45,7 +45,7 @@ export function Footer() {
           />
         </div>
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-border-subtle pt-6 text-xs text-foreground-tertiary sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} Mercado IFC · Demo Hackathon Avalanche</p>
+          <p>© {new Date().getFullYear()} Arca · Demo Hackathon Avalanche</p>
           <p>Construido con Next.js, Solidity y mucho café.</p>
         </div>
       </div>

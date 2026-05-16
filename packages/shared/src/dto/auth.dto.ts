@@ -4,6 +4,9 @@ import { ROLES } from '../constants';
 export const LoginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  // Optional panel hint: 'user' rejects admin logins, 'admin' rejects
+  // investor/issuer logins. Omit to allow any role (backwards-compat).
+  panel: z.enum(['user', 'admin']).optional(),
 });
 export type LoginDto = z.infer<typeof LoginSchema>;
 

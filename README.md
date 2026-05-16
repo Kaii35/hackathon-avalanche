@@ -1,6 +1,8 @@
-# Hackathon Avalanche — Mercado Secundario IFC
+# Arca — Mercado Secundario Regulado
 
-Plataforma de tokenización y mercado secundario regulado de participaciones de Instituciones de Financiamiento Colectivo (IFC) sobre Avalanche, con compliance CNBV nativo a nivel de smart contract.
+**Arca** es la plataforma de tokenización y mercado secundario de participaciones de Instituciones de Financiamiento Colectivo (IFC) sobre Avalanche, con compliance CNBV nativo a nivel de smart contract.
+
+> _El nombre evoca el arca como custodia segura de valor — y guiña al cliente piloto Ark·angeles._
 
 > **Cliente piloto:** Arkangeles
 > **Hackathon:** Avalanche LATAM 2026

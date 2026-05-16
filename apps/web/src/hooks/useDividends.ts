@@ -190,6 +190,9 @@ export function useClaimableDividends(holder: Address | undefined) {
  * (wagmi internal type identifiers are not portable across module paths).
  * Consumers only need `.data`; the rest is opaque metadata.
  */
+// Explicit return type so the build doesn't try (and fail) to serialise a
+// type reference into the pnpm-virtual @wagmi/core path, which isn't a
+// portable identifier in declaration output.
 export function useTotalClaimable(holder: Address | undefined): {
   data: bigint;
   isLoading: boolean;
@@ -201,4 +204,11 @@ export function useTotalClaimable(holder: Address | undefined): {
   const total = claimable?.reduce((acc, c) => (c.claimed ? acc : acc + c.amount), 0n) ?? 0n;
 
   return { data: total, isLoading, isError, refetch };
+  error: Error | null;
+} {
+  const { data: claimable, isLoading, isError, error } = useClaimableDividends(holder);
+
+  const total = claimable?.reduce((acc, c) => (c.claimed ? acc : acc + c.amount), 0n) ?? 0n;
+
+  return { data: total, isLoading, isError, error: error as Error | null };
 }

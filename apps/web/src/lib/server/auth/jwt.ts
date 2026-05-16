@@ -2,8 +2,10 @@ import { SignJWT, jwtVerify } from 'jose';
 import type { JwtPayload } from '@hack/shared';
 import { AuthError } from '@hack/shared';
 
-const ISSUER = 'mercado-ifc';
-const AUDIENCE = 'mercado-ifc-web';
+// Note: changing these values invalidates ALL existing JWTs in browsers —
+// users will need to re-login once. Acceptable as a one-time rename cost.
+const ISSUER = 'arca';
+const AUDIENCE = 'arca-web';
 const TOKEN_TTL = '7d';
 
 function getSecretKey(): Uint8Array {

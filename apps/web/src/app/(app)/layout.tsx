@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
 import { AppCommandPalette } from '@/components/shell/AppCommandPalette';
+import { ConnectWalletDialog } from '@/components/wallet/ConnectWalletDialog';
 import { requireSession } from '@/lib/server/auth/session';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -18,6 +19,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
       <AppCommandPalette />
+      {/* Soft prompt to connect a wallet on first dashboard load. Self-gates:
+          skips admins, skips if already connected/linked, dismissible. */}
+      <ConnectWalletDialog />
     </div>
   );
 }

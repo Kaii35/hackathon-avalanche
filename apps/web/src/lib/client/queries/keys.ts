@@ -25,6 +25,7 @@ export const queryKeys = {
   admin: {
     investors: ['admin', 'investors'] as const,
     audit: ['admin', 'audit'] as const,
+    invites: ['admin', 'invites'] as const,
   },
   session: {
     me: ['session', 'me'] as const,

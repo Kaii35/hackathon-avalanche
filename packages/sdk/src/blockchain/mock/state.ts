@@ -1,7 +1,18 @@
-import { randomBytes } from 'node:crypto';
 import type { Address, Hex } from 'viem';
 import type { IdentityRecord } from '../interfaces/IdentityRegistryAdapter';
 import type { OnChainOrder } from '../interfaces/OrderbookAdapter';
+
+// Browser-and-Node compatible random bytes via the Web Crypto API.
+// Avoids `node:crypto` so this module can be imported safely from client
+// bundles (e.g. orderbook.ts in the web app). Web Crypto is available in
+// all modern browsers and Node ≥19.
+function randomHex(bytes: number): string {
+  const buf = new Uint8Array(bytes);
+  globalThis.crypto.getRandomValues(buf);
+  let out = '';
+  for (const b of buf) out += b.toString(16).padStart(2, '0');
+  return out;
+}
 
 export interface TokenState {
   address: Address;
@@ -29,15 +40,15 @@ export class MockChainState {
   }
 
   txHash(): Hex {
-    return ('0x' + randomBytes(32).toString('hex')) as Hex;
+    return ('0x' + randomHex(32)) as Hex;
   }
 
   tokenAddress(): Address {
-    return ('0x' + randomBytes(20).toString('hex')).toLowerCase() as Address;
+    return ('0x' + randomHex(20)).toLowerCase() as Address;
   }
 
   eventId(): string {
-    return randomBytes(16).toString('hex');
+    return randomHex(16);
   }
 }
 

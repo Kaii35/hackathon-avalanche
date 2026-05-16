@@ -26,6 +26,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useOnboardingStore } from '@/lib/client/stores/onboardingStore';
+import { useSession } from '@/lib/client/queries/session';
 import { api, ApiError } from '@/lib/client/api';
 
 /**
@@ -39,7 +40,7 @@ function buildSiweMessage(address: string): string {
     '',
     address,
     '',
-    'URI: https://mercado-ifc.app',
+    'URI: https://arca.mx',
     'Versión: 1',
     'Chain ID: 43113',
     `Issued At: ${new Date().toISOString()}`,
@@ -50,10 +51,18 @@ function buildSiweMessage(address: string): string {
 
 export default function WalletPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { walletConnected, walletAddress, patch } = useOnboardingStore();
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const [signing, setSigning] = useState(false);
+  const isAdmin = session?.role === 'admin';
+
+  // Admins use a dedicated /admin-setup screen (no stepper). If one lands
+  // here by accident, bounce them out.
+  useEffect(() => {
+    if (isAdmin) router.replace('/admin-setup');
+  }, [isAdmin, router]);
 
   // Mounted gate so the SIWE preview (which interpolates a live timestamp
   // and the wagmi address) doesn't cause a SSR/CSR hydration mismatch.
@@ -188,10 +197,16 @@ export default function WalletPage() {
         </div>
       </CardContent>
       <CardFooter>
-        <Button variant="ghost" onClick={() => router.push('/onboarding/kyc')}>
-          <ChevronLeft />
-          Volver
-        </Button>
+        {isAdmin ? (
+          // Admin onboarding has no prior step (KYC + personal data are skipped),
+          // so don't offer a back button that would bounce them around.
+          <span />
+        ) : (
+          <Button variant="ghost" onClick={() => router.push('/onboarding/kyc')}>
+            <ChevronLeft />
+            Volver
+          </Button>
+        )}
         <Button
           disabled={!linked}
           onClick={() => {

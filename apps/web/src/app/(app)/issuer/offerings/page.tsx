@@ -87,8 +87,11 @@ const columns: ColumnDef<MockOffering>[] = [
 ];
 
 export default function IssuerOfferingsPage() {
-  const { data, isLoading } = useOfferings();
-  const mine = (data ?? []).filter((o) => o.issuerId === 'a0a00000-0000-0000-0000-000000000001');
+  // `mine: true` makes the API resolve the current user's Issuer server-side
+  // and only return offerings for that Issuer. Previously this page filtered
+  // client-side by a hardcoded seed issuerId — broken for any real user.
+  const { data, isLoading } = useOfferings({ mine: true });
+  const mine = data ?? [];
 
   return (
     <>

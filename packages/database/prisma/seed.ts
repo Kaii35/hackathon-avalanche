@@ -31,6 +31,7 @@ async function main() {
   await prisma.kycRecord.deleteMany();
   await prisma.identity.deleteMany();
   await prisma.wallet.deleteMany();
+  await prisma.adminInvite.deleteMany();
   await prisma.user.deleteMany();
   await prisma.issuer.deleteMany();
   await prisma.processedEvent.deleteMany();
@@ -66,6 +67,17 @@ async function main() {
       },
     }),
   ]);
+
+  // eslint-disable-next-line no-console
+  console.log('Creando invitación admin bootstrap...');
+  await prisma.adminInvite.create({
+    data: {
+      email: 'nuevo.admin@arkangeles.mx',
+      note: 'Invitación demo — usa este correo para probar el flujo /register → admin',
+      invitedById: admins[0]?.id ?? null,
+      status: 'pending',
+    },
+  });
 
   // eslint-disable-next-line no-console
   console.log('Creando inversionistas...');

@@ -1,4 +1,4 @@
-# SESSION HANDOFF — Mercado Secundario IFC sobre Avalanche
+# SESSION HANDOFF — Arca · Mercado Secundario Regulado sobre Avalanche
 
 > **Generado:** 2026-05-16 al final de la primera sesión.
 > **Actualizado:** 2026-05-16 (sesión 2 — Sumsub real, wallet linking real, admin investor view real, landing polish, build verde).

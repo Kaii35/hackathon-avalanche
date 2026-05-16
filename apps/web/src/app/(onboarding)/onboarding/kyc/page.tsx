@@ -23,6 +23,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useOnboardingStore } from '@/lib/client/stores/onboardingStore';
+import { useSession } from '@/lib/client/queries/session';
 
 // WebSDK has to render client-side only — no SSR shell.
 const SumsubWebSdk = dynamic(() => import('@sumsub/websdk-react'), { ssr: false });
@@ -46,7 +47,15 @@ interface StatusResponse {
 export default function KycPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
+  const { data: session } = useSession();
   const { patch } = useOnboardingStore();
+
+  // Admins bypass KYC entirely and use a dedicated /admin-setup screen.
+  useEffect(() => {
+    if (session?.role === 'admin') {
+      router.replace('/admin-setup');
+    }
+  }, [session?.role, router]);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [token, setToken] = useState<string | null>(null);
