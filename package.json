@@ -10,6 +10,7 @@
     "test": "turbo run test",
     "compile": "turbo run compile",
     "type-check": "turbo run type-check",
+    "typecheck": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,sol}\"",
     "prepare": "husky || true"

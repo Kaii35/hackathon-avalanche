@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev --turbopack",
     "build": "dotenv -e ../../.env -- next build",
+    "build:ci": "next build",
     "start": "dotenv -e ../../.env -- next start",
+    "start:ci": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "type-check:backend": "tsc --noEmit -p tsconfig.backend.json"

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @hack/database run db:generate:ci && pnpm --filter @hack/web run build:ci",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "github": {
+    "silent": true
+  }
+}
