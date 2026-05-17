@@ -2,28 +2,65 @@ import Redis from 'ioredis';
 
 const globalForRedis = globalThis as unknown as { redis?: Redis };
 
+/**
+ * No-op Proxy stub used when REDIS_URL is not configured (typical Vercel
+ * preview / first deploy). Satisfies the ioredis surface enough for our
+ * callers — every command resolves to `null`, every event listener call
+ * returns the stub itself for chaining. Zero TCP attempts, zero ECONNREFUSED
+ * spam in build logs.
+ *
+ * Trade-off: rate-limiting / orderbook caching silently degrade (always a
+ * cache miss, no rate enforcement) — but the app still serves requests.
+ * Set REDIS_URL to enable the real client.
+ */
+function createNoopStub(): Redis {
+  const stub: unknown = new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        if (prop === 'then') return undefined; // not a thenable
+        // Event-emitter chain methods return the stub for fluency.
+        if (
+          prop === 'on' ||
+          prop === 'once' ||
+          prop === 'off' ||
+          prop === 'addListener' ||
+          prop === 'removeListener' ||
+          prop === 'emit'
+        ) {
+          return () => stub;
+        }
+        // disconnect / quit are sync void calls in some ioredis versions.
+        if (prop === 'disconnect' || prop === 'quit' || prop === 'end') {
+          return () => Promise.resolve('OK');
+        }
+        // Every other access is assumed to be a Redis command — resolves null.
+        return () => Promise.resolve(null);
+      },
+    },
+  );
+  return stub as Redis;
+}
+
 function createRedis(): Redis {
-  const url = process.env.REDIS_URL ?? 'redis://localhost:6379';
-  // lazyConnect: true → no TCP attempt until the first command. Critical for
-  // serverless / build-time: Next's "Collecting page data" step imports
-  // server modules, which used to trigger an immediate connect to
-  // localhost:6379 and flood the build logs with ECONNREFUSED. With lazy
-  // connect, the module loads cleanly; only routes that actually call Redis
-  // pay the connection cost at request time.
-  // maxRetriesPerRequest: 1 (was null = forever) → if Redis is unreachable
-  // at runtime we fail fast instead of hanging serverless functions until
-  // they timeout.
-  const client = new Redis(url, {
+  // If REDIS_URL isn't set, return the no-op stub. This is the critical fix
+  // for Vercel deploys without a managed Redis: previously we defaulted to
+  // 'redis://localhost:6379' which doesn't exist in the build env, flooding
+  // logs with ECONNREFUSED. The stub completes cleanly.
+  if (!process.env.REDIS_URL) {
+    return createNoopStub();
+  }
+
+  const client = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: 1,
     enableReadyCheck: false,
     lazyConnect: true,
-    // Silently swallow connection failures during build / when Redis isn't
-    // available — callers still get a proper rejection when they try to
-    // issue a command, but we don't crash the process from a stray event.
   });
+  // Always register an error listener so transient connection issues don't
+  // crash the process via Node's "Unhandled error event" default handler.
   client.on('error', (err) => {
-    // eslint-disable-next-line no-console
     if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
       console.warn('[redis] connection error (non-fatal):', err.message);
     }
   });
