@@ -1,0 +1,1551 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>ARCA · Pitch deck para Arkangeles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --brand: #2a5bff;
+        --brand-light: #5c82ff;
+        --brand-dark: #1740cc;
+        --brand-deep: #0a1e6b;
+        --accent: #fcd34d;
+        --ink: #0a0f1f;
+        --ink-soft: #1e293b;
+        --muted: #475569;
+        --muted-soft: #64748b;
+        --canvas: #fafbfc;
+        --surface: #ffffff;
+        --border: #e2e8f0;
+        --border-soft: #eef1f5;
+        --success: #10b981;
+        --warning: #f59e0b;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0; padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--ink);
+        background: #000;
+        -webkit-font-smoothing: antialiased;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-size: 13pt;
+        line-height: 1.4;
+      }
+
+      /* 16:9 widescreen slide — matches PowerPoint widescreen exactly */
+      @page { size: 338.67mm 190.5mm; margin: 0; }
+
+      .slide {
+        width: 338.67mm;
+        height: 190.5mm;
+        page-break-after: always;
+        break-after: page;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .slide:last-child {
+        page-break-after: auto;
+      }
+
+      /* ============================================================
+         REUSABLE BACKGROUNDS
+      ============================================================ */
+      .bg-dark {
+        background: linear-gradient(135deg, #050a1f 0%, #0b1b4d 60%, #1d2a8c 100%);
+        color: #fff;
+      }
+      .bg-deep {
+        background: #050a1f;
+        color: #fff;
+      }
+      .bg-light {
+        background: var(--canvas);
+        color: var(--ink);
+      }
+      .bg-aurora {
+        background:
+          radial-gradient(ellipse 60% 50% at 80% 10%, rgba(252, 211, 77, 0.2) 0%, transparent 50%),
+          radial-gradient(ellipse 70% 60% at 10% 95%, rgba(42, 91, 255, 0.4) 0%, transparent 55%),
+          radial-gradient(ellipse 80% 50% at 50% 50%, rgba(139, 92, 246, 0.25) 0%, transparent 60%),
+          linear-gradient(135deg, #050a1f 0%, #0b1b4d 60%, #1d2a8c 100%);
+        color: #fff;
+      }
+
+      /* Decorative grid pattern (subtle) */
+      .grid-pattern::before {
+        content: '';
+        position: absolute; inset: 0;
+        background:
+          repeating-linear-gradient(0deg, transparent 0, transparent 60px, rgba(255, 255, 255, 0.02) 60px, rgba(255, 255, 255, 0.02) 61px),
+          repeating-linear-gradient(90deg, transparent 0, transparent 60px, rgba(255, 255, 255, 0.02) 60px, rgba(255, 255, 255, 0.02) 61px);
+        pointer-events: none;
+      }
+
+      /* ============================================================
+         HEADER / FOOTER COMMON ON CONTENT SLIDES
+      ============================================================ */
+      .slide-frame {
+        padding: 16mm 18mm 14mm;
+        position: relative; z-index: 2;
+        height: 100%;
+        display: flex; flex-direction: column;
+      }
+      .slide-top {
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 8pt;
+        font-weight: 600;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        margin-bottom: 8mm;
+      }
+      .slide-top .mark {
+        font-weight: 800;
+        letter-spacing: 0.22em;
+        font-size: 10pt;
+      }
+      .bg-light .slide-top { color: var(--muted-soft); }
+      .bg-light .slide-top .mark { color: var(--brand); }
+      .bg-dark .slide-top,
+      .bg-deep .slide-top,
+      .bg-aurora .slide-top {
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .bg-dark .slide-top .mark,
+      .bg-deep .slide-top .mark,
+      .bg-aurora .slide-top .mark {
+        color: #fff;
+      }
+
+      .slide-num {
+        position: absolute;
+        bottom: 8mm; right: 14mm;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8pt;
+        font-weight: 500;
+        letter-spacing: 0.15em;
+        opacity: 0.45;
+      }
+
+      /* ============================================================
+         SLIDE 1 — COVER
+      ============================================================ */
+      .cover-content {
+        flex: 1;
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 0 18mm;
+      }
+      .cover-eyebrow {
+        font-size: 10pt;
+        font-weight: 600;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8mm;
+      }
+      .cover-arca {
+        font-size: 200pt;
+        font-weight: 900;
+        line-height: 0.88;
+        letter-spacing: -0.04em;
+        margin: 0;
+        background: linear-gradient(180deg, #fff 0%, #c7d2fe 60%, #818cf8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-transform: uppercase;
+      }
+      .cover-sub {
+        margin-top: 10mm;
+        font-size: 22pt;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.78);
+        line-height: 1.3;
+        max-width: 220mm;
+      }
+      .cover-sub strong { color: #fff; font-weight: 600; }
+      .cover-bottom {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 18mm 14mm;
+        font-size: 10pt;
+        font-weight: 500;
+        letter-spacing: 0.15em;
+        color: rgba(255, 255, 255, 0.45);
+        text-transform: uppercase;
+      }
+      .cover-bottom strong { color: #fff; font-weight: 700; letter-spacing: 0.2em; }
+
+      /* ============================================================
+         SLIDE TYPE — BIG STATEMENT
+      ============================================================ */
+      .statement {
+        flex: 1;
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 0 24mm;
+      }
+      .statement .tag {
+        font-size: 11pt;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 14mm;
+      }
+      .bg-light .statement .tag { color: var(--brand); }
+      .statement h1 {
+        font-size: 64pt;
+        font-weight: 800;
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        margin: 0;
+        max-width: 260mm;
+      }
+      .statement h1 em {
+        background: linear-gradient(135deg, var(--accent) 0%, #fb923c 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-style: normal;
+        font-weight: 900;
+      }
+      .bg-light .statement h1 em {
+        background: linear-gradient(135deg, var(--brand) 0%, #7b4fff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .statement .kicker {
+        font-size: 16pt;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 12mm;
+        max-width: 230mm;
+        line-height: 1.45;
+      }
+      .bg-light .statement .kicker { color: var(--muted); }
+
+      /* ============================================================
+         SLIDE TYPE — HEADER + GRID
+      ============================================================ */
+      .slide-title {
+        font-size: 36pt;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        margin: 0 0 4mm;
+        color: var(--ink);
+        max-width: 260mm;
+      }
+      .bg-dark .slide-title,
+      .bg-deep .slide-title,
+      .bg-aurora .slide-title { color: #fff; }
+      .slide-lede {
+        font-size: 14pt;
+        line-height: 1.5;
+        color: var(--muted);
+        margin: 0 0 10mm;
+        max-width: 220mm;
+        font-weight: 400;
+      }
+      .bg-dark .slide-lede,
+      .bg-deep .slide-lede,
+      .bg-aurora .slide-lede { color: rgba(255, 255, 255, 0.72); }
+
+      .slide-eyebrow {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9pt;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--brand);
+        margin-bottom: 3mm;
+      }
+      .bg-dark .slide-eyebrow,
+      .bg-deep .slide-eyebrow,
+      .bg-aurora .slide-eyebrow { color: var(--accent); }
+
+      /* 3-column pillars */
+      .pillars-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6mm;
+        margin-top: 4mm;
+      }
+      .pillar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 5mm;
+        padding: 7mm 7mm 6mm;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -8px rgba(15, 23, 42, 0.08);
+      }
+      .bg-dark .pillar,
+      .bg-deep .pillar,
+      .bg-aurora .pillar {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+      }
+      .pillar .icon {
+        width: 11mm; height: 11mm;
+        border-radius: 3mm;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+        color: #fff;
+        font-size: 18pt;
+        font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 5mm;
+      }
+      .pillar h3 {
+        font-size: 15pt;
+        font-weight: 700;
+        margin: 0 0 3mm;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+      }
+      .bg-dark .pillar h3,
+      .bg-deep .pillar h3,
+      .bg-aurora .pillar h3 { color: #fff; }
+      .pillar p {
+        margin: 0;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .bg-dark .pillar p,
+      .bg-deep .pillar p,
+      .bg-aurora .pillar p { color: rgba(255, 255, 255, 0.72); }
+
+      /* 2-column comparison */
+      .compare-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8mm;
+        margin-top: 4mm;
+        flex: 1;
+      }
+      .compare-side {
+        border-radius: 5mm;
+        padding: 7mm 7mm 6mm;
+        display: flex; flex-direction: column;
+      }
+      .compare-side.bad {
+        background: rgba(15, 23, 42, 0.04);
+        border: 1px solid var(--border);
+      }
+      .bg-dark .compare-side.bad,
+      .bg-deep .compare-side.bad,
+      .bg-aurora .compare-side.bad {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .compare-side.good {
+        background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand) 100%);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+      }
+      .compare-side.good::after {
+        content: '';
+        position: absolute;
+        right: -20mm; top: -20mm;
+        width: 60mm; height: 60mm;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .compare-side .label {
+        font-size: 9pt;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--muted-soft);
+        margin-bottom: 3mm;
+      }
+      .compare-side.good .label {
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .compare-side h3 {
+        font-size: 22pt;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 6mm;
+        color: var(--ink);
+      }
+      .compare-side.good h3 { color: #fff; }
+      .compare-side ul {
+        margin: 0; padding: 0; list-style: none;
+        flex: 1;
+      }
+      .compare-side li {
+        font-size: 12pt;
+        line-height: 1.5;
+        padding-left: 7mm;
+        position: relative;
+        margin-bottom: 4mm;
+        color: var(--ink-soft);
+      }
+      .compare-side.bad li::before {
+        content: '✕';
+        position: absolute; left: 0;
+        color: #ef4444;
+        font-weight: 700;
+        font-size: 11pt;
+      }
+      .compare-side.good li {
+        color: rgba(255, 255, 255, 0.94);
+      }
+      .compare-side.good li::before {
+        content: '✓';
+        position: absolute; left: 0;
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 12pt;
+      }
+
+      /* Big numbered steps */
+      .steps-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5mm;
+        margin-top: 4mm;
+        flex: 1;
+      }
+      .stepc {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 5mm;
+        padding: 7mm 6mm 6mm;
+        display: flex; flex-direction: column;
+      }
+      .bg-dark .stepc,
+      .bg-deep .stepc,
+      .bg-aurora .stepc {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .stepc .n {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 36pt;
+        font-weight: 800;
+        line-height: 0.9;
+        letter-spacing: -0.04em;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 5mm;
+      }
+      .bg-dark .stepc .n,
+      .bg-deep .stepc .n,
+      .bg-aurora .stepc .n {
+        background: linear-gradient(135deg, var(--accent) 0%, #fb923c 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .stepc h3 {
+        font-size: 14pt;
+        font-weight: 700;
+        margin: 0 0 3mm;
+        line-height: 1.2;
+        color: var(--ink);
+      }
+      .bg-dark .stepc h3,
+      .bg-deep .stepc h3,
+      .bg-aurora .stepc h3 { color: #fff; }
+      .stepc p {
+        margin: 0;
+        font-size: 10pt;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .bg-dark .stepc p,
+      .bg-deep .stepc p,
+      .bg-aurora .stepc p { color: rgba(255, 255, 255, 0.7); }
+
+      /* ============================================================
+         SLIDE TYPE — REG OBLIGATIONS CARD
+      ============================================================ */
+      .reg-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5mm;
+        margin-top: 4mm;
+        flex: 1;
+      }
+      .reg-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 5mm;
+        padding: 6mm 6mm 5mm;
+        display: flex; flex-direction: column;
+        position: relative;
+      }
+      .bg-dark .reg-card,
+      .bg-deep .reg-card,
+      .bg-aurora .reg-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .reg-card .chip {
+        display: inline-block;
+        align-self: flex-start;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--brand);
+        background: rgba(42, 91, 255, 0.1);
+        padding: 1.5mm 3mm;
+        border-radius: 2mm;
+        margin-bottom: 4mm;
+      }
+      .bg-dark .reg-card .chip,
+      .bg-deep .reg-card .chip,
+      .bg-aurora .reg-card .chip {
+        color: var(--accent);
+        background: rgba(252, 211, 77, 0.15);
+      }
+      .reg-card h3 {
+        font-size: 16pt;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        margin: 0 0 4mm;
+        color: var(--ink);
+      }
+      .bg-dark .reg-card h3,
+      .bg-deep .reg-card h3,
+      .bg-aurora .reg-card h3 { color: #fff; }
+      .reg-card .what {
+        font-size: 10.5pt;
+        color: var(--muted);
+        margin: 0 0 5mm;
+        line-height: 1.45;
+        flex: 1;
+      }
+      .bg-dark .reg-card .what,
+      .bg-deep .reg-card .what,
+      .bg-aurora .reg-card .what { color: rgba(255, 255, 255, 0.68); }
+      .reg-card .arca-line {
+        padding: 4mm 4mm 3mm;
+        border-radius: 3mm;
+        background: linear-gradient(90deg, rgba(42, 91, 255, 0.08) 0%, rgba(42, 91, 255, 0.02) 100%);
+        border-left: 2pt solid var(--brand);
+      }
+      .bg-dark .reg-card .arca-line,
+      .bg-deep .reg-card .arca-line,
+      .bg-aurora .reg-card .arca-line {
+        background: linear-gradient(90deg, rgba(252, 211, 77, 0.1) 0%, rgba(252, 211, 77, 0.02) 100%);
+        border-left: 2pt solid var(--accent);
+      }
+      .reg-card .arca-line .lbl {
+        font-size: 7.5pt;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--brand);
+        margin-bottom: 1.5mm;
+      }
+      .bg-dark .reg-card .arca-line .lbl,
+      .bg-deep .reg-card .arca-line .lbl,
+      .bg-aurora .reg-card .arca-line .lbl { color: var(--accent); }
+      .reg-card .arca-line .txt {
+        font-size: 10pt;
+        font-weight: 500;
+        color: var(--ink);
+        line-height: 1.4;
+      }
+      .bg-dark .reg-card .arca-line .txt,
+      .bg-deep .reg-card .arca-line .txt,
+      .bg-aurora .reg-card .arca-line .txt { color: #fff; }
+
+      /* ============================================================
+         BIG NUMBER SLIDE (e.g. 210 UMA)
+      ============================================================ */
+      .bignum-wrap {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14mm;
+        align-items: center;
+        padding: 0 4mm;
+      }
+      .bignum-left .num {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 200pt;
+        font-weight: 900;
+        line-height: 0.85;
+        letter-spacing: -0.06em;
+        background: linear-gradient(180deg, #fff 0%, #c7d2fe 60%, #818cf8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin: 0;
+      }
+      .bignum-left .unit {
+        margin-top: 4mm;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24pt;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        color: var(--accent);
+        text-transform: uppercase;
+      }
+      .bignum-right {
+        padding-right: 8mm;
+      }
+      .bignum-right .label {
+        font-size: 10pt;
+        font-weight: 600;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 5mm;
+      }
+      .bignum-right h2 {
+        font-size: 36pt;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 6mm;
+      }
+      .bignum-right h2 em {
+        background: linear-gradient(135deg, var(--accent) 0%, #fb923c 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-style: normal;
+      }
+      .bignum-right p {
+        font-size: 14pt;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.78);
+        margin: 0;
+      }
+      .bignum-right .arca-pill {
+        margin-top: 8mm;
+        display: inline-block;
+        padding: 3mm 6mm;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 12pt;
+        color: #fff;
+        letter-spacing: 0.02em;
+      }
+
+      /* ============================================================
+         BENEFITS GRID (4 items)
+      ============================================================ */
+      .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5mm;
+        margin-top: 4mm;
+        flex: 1;
+      }
+      .benefit {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 5mm;
+        padding: 6mm 7mm 5mm;
+        display: flex;
+        gap: 5mm;
+        align-items: flex-start;
+      }
+      .benefit .b-icon {
+        width: 12mm; height: 12mm;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        font-size: 14pt;
+        font-weight: 800;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .benefit h3 {
+        margin: 0 0 2mm;
+        font-size: 14pt;
+        font-weight: 700;
+        color: var(--ink);
+        line-height: 1.2;
+      }
+      .benefit p {
+        margin: 0;
+        font-size: 10.5pt;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      /* ============================================================
+         ROADMAP MINI (4 phases on one slide)
+      ============================================================ */
+      .rm-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4mm;
+        margin-top: 4mm;
+        flex: 1;
+      }
+      .rm-phase {
+        border-radius: 4mm;
+        padding: 6mm 5mm 5mm;
+        color: #fff;
+        display: flex; flex-direction: column;
+      }
+      .rm-phase.p1 { background: linear-gradient(135deg, #059669, #10b981); }
+      .rm-phase.p2 { background: linear-gradient(135deg, #1740cc, #2a5bff); box-shadow: 0 0 0 2pt rgba(252, 211, 77, 0.6); }
+      .rm-phase.p3 { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+      .rm-phase.p4 { background: linear-gradient(135deg, #d97706, #f59e0b); }
+      .rm-phase .pnum {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9pt;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        opacity: 0.8;
+        margin-bottom: 3mm;
+      }
+      .rm-phase h3 {
+        font-size: 17pt;
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        margin: 0 0 3mm;
+        color: #fff;
+      }
+      .rm-phase .pq {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9pt;
+        font-weight: 500;
+        opacity: 0.85;
+        margin-bottom: 5mm;
+      }
+      .rm-phase ul {
+        margin: 0; padding: 0; list-style: none;
+        flex: 1;
+      }
+      .rm-phase li {
+        font-size: 10pt;
+        line-height: 1.4;
+        padding-left: 4mm;
+        position: relative;
+        margin-bottom: 2mm;
+        color: rgba(255, 255, 255, 0.92);
+      }
+      .rm-phase li::before {
+        content: '·';
+        position: absolute; left: 0;
+        opacity: 0.7;
+      }
+      .rm-phase .pstatus {
+        margin-top: 4mm;
+        align-self: flex-start;
+        font-size: 7.5pt;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        padding: 1.5mm 3mm;
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 1.5mm;
+      }
+
+      /* ============================================================
+         "ASK" SLIDE
+      ============================================================ */
+      .ask-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6mm;
+        margin-top: 4mm;
+        flex: 1;
+      }
+      .ask {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        border-radius: 5mm;
+        padding: 8mm 7mm 7mm;
+        display: flex; flex-direction: column;
+        position: relative;
+      }
+      .ask .ico {
+        width: 13mm; height: 13mm;
+        border-radius: 3mm;
+        background: linear-gradient(135deg, var(--accent), #fb923c);
+        color: #050a1f;
+        font-size: 18pt;
+        font-weight: 800;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 5mm;
+      }
+      .ask h3 {
+        font-size: 18pt;
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.015em;
+        margin: 0 0 4mm;
+        color: #fff;
+      }
+      .ask p {
+        margin: 0;
+        font-size: 11pt;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      /* ============================================================
+         CLOSING / FINAL
+      ============================================================ */
+      .closing-content {
+        flex: 1;
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 0 24mm;
+      }
+      .closing-content .ko {
+        font-size: 12pt;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 10mm;
+      }
+      .closing-content h1 {
+        font-size: 72pt;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        margin: 0;
+        max-width: 270mm;
+      }
+      .closing-content h1 span {
+        background: linear-gradient(135deg, var(--accent) 0%, #fb923c 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .closing-content p {
+        margin: 12mm 0 0;
+        max-width: 220mm;
+        font-size: 16pt;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.78);
+        font-weight: 400;
+      }
+      .closing-content .pill-row {
+        margin-top: 12mm;
+        display: flex; gap: 4mm; align-items: center;
+      }
+      .closing-content .pill {
+        display: inline-block;
+        padding: 3mm 6mm;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 11pt;
+        color: #fff;
+      }
+      .closing-content .pill.solid {
+        background: linear-gradient(135deg, var(--accent), #fb923c);
+        color: #050a1f;
+        border: 1px solid transparent;
+        font-weight: 700;
+      }
+
+      /* ============================================================
+         UTILITY
+      ============================================================ */
+      .body-fill { flex: 1; display: flex; flex-direction: column; }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+         SLIDE 01 — COVER
+    ============================================================ -->
+    <section class="slide bg-aurora grid-pattern">
+      <div class="cover-bottom" style="padding-top: 14mm;">
+        <span class="cover-eyebrow" style="margin: 0;">Propuesta para Arkangeles</span>
+        <span><strong>ARCA</strong> · pitch deck</span>
+      </div>
+      <div class="cover-content">
+        <h1 class="cover-arca">ARCA</h1>
+        <p class="cover-sub">
+          La infraestructura on-chain para que <strong>Arkangeles</strong> opere
+          un mercado secundario regulado de participaciones IFC — con compliance
+          CNBV embebido a nivel código.
+        </p>
+      </div>
+      <div class="cover-bottom">
+        <span>Mercado Secundario Regulado</span>
+        <span>Confidencial · 2026</span>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 02 — EL PROBLEMA
+    ============================================================ -->
+    <section class="slide bg-deep">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>02 · El problema</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="statement">
+          <div class="tag">El problema</div>
+          <h1>
+            Sus inversionistas quedan <em>atrapados 5 a 10 años</em><br />sin
+            poder vender su participación.
+          </h1>
+          <p class="kicker">
+            Eso deprime la demanda primaria, baja el ticket promedio y los
+            obliga a competir más caro por cada nuevo inversionista.
+          </p>
+        </div>
+        <div class="slide-num">02 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 03 — EL INSIGHT
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>03 · El insight</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="statement">
+          <div class="tag">La pregunta</div>
+          <h1 style="color: var(--ink);">
+            ¿Y si vender una participación IFC fuera
+            <em>tan fácil como vender una acción</em>?
+          </h1>
+          <p class="kicker">
+            Sin abrir un solo agujero regulatorio. Sin papeleo. Sin reescribir
+            un Excel. Cumpliendo CNBV por diseño, no por compliance manual.
+          </p>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">03 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 04 — QUÉ ES ARCA
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>04 · La solución</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Qué es ARCA</div>
+        <h2 class="slide-title">
+          Una plataforma compliance-native, no un &laquo;DeFi para IFCs&raquo;.
+        </h2>
+        <p class="slide-lede">
+          Web full-stack + blockchain. Identidad on-chain, smart contracts que
+          ejecutan el cumplimiento, audit log inmutable. Diseñada desde el
+          minuto cero para encajar con el marco regulatorio que Arkangeles ya
+          tiene.
+        </p>
+        <div class="pillars-3">
+          <div class="pillar">
+            <div class="icon">★</div>
+            <h3>Identidad on-chain</h3>
+            <p>
+              Cada inversionista verificado vive en un IdentityRegistry con
+              KYC, jurisdicción y nivel de acreditación. Sin esto, no opera.
+            </p>
+          </div>
+          <div class="pillar">
+            <div class="icon">✓</div>
+            <h3>Compliance embebido</h3>
+            <p>
+              Lockup, max holders, jurisdicción permitida, wallets congeladas:
+              el contrato <strong>bloquea</strong> cualquier transferencia que
+              viole las reglas.
+            </p>
+          </div>
+          <div class="pillar">
+            <div class="icon">↺</div>
+            <h3>Liquidez 24/7</h3>
+            <p>
+              Order book on-chain + settlement atómico contra stablecoin.
+              Órdenes firmadas que se cruzan sin intermediario manual.
+            </p>
+          </div>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">04 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 05 — CÓMO FUNCIONA (4 PASOS)
+    ============================================================ -->
+    <section class="slide bg-dark">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>05 · El flujo</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Cómo funciona</div>
+        <h2 class="slide-title">Cuatro pasos. Ningún cambio en su modelo legal.</h2>
+        <p class="slide-lede">
+          Toda la complejidad técnica queda detrás de pantallas que se ven y
+          comportan como cualquier dashboard moderno.
+        </p>
+        <div class="steps-4">
+          <div class="stepc">
+            <div class="n">01</div>
+            <h3>Arkangeles tokeniza</h3>
+            <p>
+              Configura la oferta (símbolo, supply, lockup, jurisdicción) y
+              deploya el contrato ERC-3643 en Avalanche con un clic.
+            </p>
+          </div>
+          <div class="stepc">
+            <div class="n">02</div>
+            <h3>Inversionistas verifican</h3>
+            <p>
+              KYC vía Sumsub. Al aprobarse quedan registrados on-chain.
+              Una sola verificación les sirve para cualquier oferta futura.
+            </p>
+          </div>
+          <div class="stepc">
+            <div class="n">03</div>
+            <h3>Operan con cumplimiento auto</h3>
+            <p>
+              Órdenes firmadas EIP-712. El contrato revisa compliance antes
+              de cada trade. Settlement atómico contra USDC.
+            </p>
+          </div>
+          <div class="stepc">
+            <div class="n">04</div>
+            <h3>Cap table siempre viva</h3>
+            <p>
+              La cadena ES la cap table. Audit log inmutable. CNBV puede
+              revisar todo en línea — sin pedirles nada.
+            </p>
+          </div>
+        </div>
+        <div class="slide-num">05 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 06 — INTRO REGULATORIO
+    ============================================================ -->
+    <section class="slide bg-deep">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>06 · Sus dolores regulatorios</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="statement">
+          <div class="tag">El verdadero costo operativo</div>
+          <h1>
+            Cumplir con CNBV, LFPIORPI y UIF<br />no es opcional. Es
+            <em>caro</em>, <em>manual</em> y <em>propenso a errores</em>.
+          </h1>
+          <p class="kicker">
+            Las próximas slides muestran las 6 obligaciones que más carga
+            ponen sobre su equipo de compliance — y cómo ARCA las convierte
+            en código.
+          </p>
+        </div>
+        <div class="slide-num">06 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 07 — TRES OBLIGACIONES MARCO
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>07 · Marco normativo</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Las obligaciones base</div>
+        <h2 class="slide-title">Lo que la ley exige · lo que ARCA automatiza.</h2>
+        <div class="reg-grid">
+          <div class="reg-card">
+            <span class="chip">Ley Fintech</span>
+            <h3>Constitución en México + IFC</h3>
+            <p class="what">
+              Sociedad mexicana (S.A. o SAPI) autorizada por CNBV como IFC.
+              Arkangeles ya cumple.
+            </p>
+            <div class="arca-line">
+              <div class="lbl">ARCA</div>
+              <div class="txt">
+                No requiere nueva entidad. Opera bajo la autorización IFC ya
+                existente de Arkangeles.
+              </div>
+            </div>
+          </div>
+          <div class="reg-card">
+            <span class="chip">LFPIORPI</span>
+            <h3>Actividad Vulnerable</h3>
+            <p class="what">
+              Operar con activos virtuales o fondeo colectivo es actividad
+              vulnerable. Obliga a identificar al cliente y conservar
+              expedientes.
+            </p>
+            <div class="arca-line">
+              <div class="lbl">ARCA</div>
+              <div class="txt">
+                Nadie opera sin pasar por KYC y quedar registrado on-chain.
+                Sin identidad, sin token.
+              </div>
+            </div>
+          </div>
+          <div class="reg-card">
+            <span class="chip">Art 17 fr. XVI</span>
+            <h3>Servicios de fondeo colectivo</h3>
+            <p class="what">
+              LFPIORPI lista expresamente al crowdfunding de inversión. Obliga
+              a designar oficial de cumplimiento y reportar a la UIF.
+            </p>
+            <div class="arca-line">
+              <div class="lbl">ARCA</div>
+              <div class="txt">
+                Expediente + historial + reportes a UIF prellenados desde el
+                propio audit log on-chain.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">07 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 08 — BIG NUMBER 210 UMA
+    ============================================================ -->
+    <section class="slide bg-aurora grid-pattern">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>08 · UIF · Reportes por umbral</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="bignum-wrap">
+          <div class="bignum-left">
+            <div class="num">210</div>
+            <div class="unit">UMA</div>
+          </div>
+          <div class="bignum-right">
+            <div class="label">El umbral que define un reporte UIF</div>
+            <h2>
+              Cualquier operación &ge; <em>$23,759 MXN</em><br />
+              debe reportarse a la UIF.
+            </h2>
+            <p>
+              Manualmente, cada reporte es horas de reconciliación entre
+              sistemas y generación de un XML estructurado. Un error tipográfico
+              en el XML puede generar sanciones.
+            </p>
+            <span class="arca-pill">
+              ARCA lo prellena automático desde el indexer on-chain →
+            </span>
+          </div>
+        </div>
+        <div class="slide-num">08 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 09 — TRES OBLIGACIONES OPERATIVAS
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>09 · Carga operativa diaria</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Las tres más pesadas</div>
+        <h2 class="slide-title">Lo que hoy consume el 40% del equipo de compliance.</h2>
+        <div class="reg-grid">
+          <div class="reg-card">
+            <span class="chip">AML / CFT</span>
+            <h3>Monitoreo de transacciones</h3>
+            <p class="what">
+              Detectar patrones inusuales — estructuración, layering,
+              jurisdicciones de alto riesgo — en tiempo real. Equipo dedicado
+              revisando reportes y cruzando bases.
+            </p>
+            <div class="arca-line">
+              <div class="lbl">ARCA</div>
+              <div class="txt">
+                Indexer en tiempo real con reglas configurables. Alertas
+                <strong>antes</strong> de que el trade cierre, no después.
+              </div>
+            </div>
+          </div>
+          <div class="reg-card">
+            <span class="chip">UIF · XML</span>
+            <h3>Reportes por umbral</h3>
+            <p class="what">
+              Mensuales acumulados, preventivos por operación inusual, 24h por
+              intento de evasión de umbral. Todo en XML específico de la UIF.
+            </p>
+            <div class="arca-line">
+              <div class="lbl">ARCA</div>
+              <div class="txt">
+                Cada categoría se genera desde una sola fuente. Export en
+                formato UIF nativo, un clic.
+              </div>
+            </div>
+          </div>
+          <div class="reg-card">
+            <span class="chip">10 años</span>
+            <h3>Almacenamiento de expedientes</h3>
+            <p class="what">
+              Conservar identificación + documentación de cada operación por
+              al menos 10 años. Disponible para CNBV o UIF en cualquier
+              momento.
+            </p>
+            <div class="arca-line">
+              <div class="lbl">ARCA</div>
+              <div class="txt">
+                KYC cifrado + audit log on-chain inmutable. El mejor archivo
+                legal posible — imposible de alterar.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">09 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 10 — COMPARATIVA SIN ARCA / CON ARCA
+    ============================================================ -->
+    <section class="slide bg-dark">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>10 · Antes y después</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">El cambio neto</div>
+        <h2 class="slide-title">
+          El equipo pasa de <em style="color: var(--accent); font-style: normal;">operar</em>
+          a <em style="color: var(--accent); font-style: normal;">supervisar</em>.
+        </h2>
+        <div class="compare-2">
+          <div class="compare-side bad">
+            <div class="label">Sin ARCA · manual</div>
+            <h3 style="color: rgba(255,255,255,0.95);">El status quo</h3>
+            <ul style="color: rgba(255,255,255,0.85);">
+              <li>KYC en documentos físicos o sistemas separados</li>
+              <li>Reportes UIF armados a mano cada mes</li>
+              <li>Cap table reconciliada con Excel</li>
+              <li>Inspecciones CNBV requieren juntar evidencia</li>
+              <li>Cero liquidez secundaria para inversionistas</li>
+              <li>Error humano = riesgo sancionatorio</li>
+            </ul>
+          </div>
+          <div class="compare-side good">
+            <div class="label">Con ARCA · automático</div>
+            <h3>El nuevo default</h3>
+            <ul>
+              <li>KYC + expediente + identidad on-chain en una sesión</li>
+              <li>Reportes UIF prellenados, listos para firmar</li>
+              <li>La blockchain ES la cap table — cero reconciliación</li>
+              <li>Inspecciones CNBV ven la verdad en línea</li>
+              <li>Liquidez 24/7 con compliance embebido</li>
+              <li>Es imposible cerrar un trade que viole reglas</li>
+            </ul>
+          </div>
+        </div>
+        <div class="slide-num">10 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 11 — STACK TÉCNICO
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>11 · El stack</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Tecnología</div>
+        <h2 class="slide-title">Stack probado, no experimental.</h2>
+        <p class="slide-lede">
+          Componentes ya validados en producción global. Cero invenciones de
+          parte nuestra en compliance o seguridad — usamos los estándares y
+          proveedores que el mercado financiero ya audita.
+        </p>
+        <div class="pillars-3">
+          <div class="pillar">
+            <div class="icon">⬡</div>
+            <h3>Avalanche + ERC-3643</h3>
+            <p>
+              L1 con finality sub-segundo y costos de centavos. ERC-3643 es el
+              estándar global de security tokens regulados.
+            </p>
+          </div>
+          <div class="pillar">
+            <div class="icon">⚿</div>
+            <h3>Sumsub KYC</h3>
+            <p>
+              Proveedor KYC usado por bancos en 220+ jurisdicciones. Webhooks
+              firmados con HMAC, expediente cifrado.
+            </p>
+          </div>
+          <div class="pillar">
+            <div class="icon">▣</div>
+            <h3>Next.js + viem</h3>
+            <p>
+              Stack web moderno con SSR + EIP-712 nativo. Lo mismo que usan
+              Coinbase, Uniswap, Stripe y MetaMask.
+            </p>
+          </div>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">11 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 12 — LO QUE GANAN
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>12 · Beneficios</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Win-win-win</div>
+        <h2 class="slide-title">Cuatro razones por las que Arkangeles gana.</h2>
+        <div class="benefits-grid">
+          <div class="benefit">
+            <div class="b-icon">✓</div>
+            <div>
+              <h3>Ticket promedio más alto</h3>
+              <p>
+                Inversionistas pagan más por instrumentos que pueden vender.
+                La liquidez secundaria desbloquea apetito.
+              </p>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="b-icon">✓</div>
+            <div>
+              <h3>Menor carga operativa</h3>
+              <p>
+                Compliance pasa de "generar reportes" a "supervisar y firmar".
+                Equipos escalan sin contrataciones nuevas.
+              </p>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="b-icon">✓</div>
+            <div>
+              <h3>Diferenciador competitivo</h3>
+              <p>
+                Ninguna IFC mexicana opera secundario regulado. Ser los
+                primeros los posiciona como referente.
+              </p>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="b-icon">✓</div>
+            <div>
+              <h3>Auditoría sin fricción</h3>
+              <p>
+                CNBV ve cualquier operación en cualquier momento sin pedirles
+                nada. Inspecciones más rápidas, menor riesgo.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">12 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 13 — TRADE-OFFS HONESTOS
+    ============================================================ -->
+    <section class="slide bg-deep">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>13 · Lo que cambia</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="statement">
+          <div class="tag">Honestidad antes de venta</div>
+          <h1 style="font-size: 54pt;">
+            Sí hay un costo de adopción.<br />
+            Es <em>finito</em>, <em>conocido</em> y <em>de una sola vez</em>.
+          </h1>
+          <p class="kicker">
+            <strong style="color: #fff;">Complejidad técnica:</strong> la
+            asumimos nosotros — ustedes ven un panel.<br />
+            <strong style="color: #fff;">Capacitación inicial:</strong> 2
+            semanas con su equipo legal y de operaciones.<br />
+            <strong style="color: #fff;">Settlement con stablecoin:</strong>
+            arrancamos con USDC; migración a MXN nativo es gradual.<br />
+            <strong style="color: var(--accent); margin-top: 4mm; display: inline-block;">
+              Los beneficios son permanentes y compuestos.
+            </strong>
+          </p>
+        </div>
+        <div class="slide-num">13 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 14 — ROADMAP MINI
+    ============================================================ -->
+    <section class="slide bg-light">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>14 · Plan</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Roadmap 2026 — 2027</div>
+        <h2 class="slide-title">El plan en cuatro fases.</h2>
+        <p class="slide-lede">
+          La Fase 02 — Pilot Launch con Arkangeles — arranca en cuanto digan
+          "vamos". Las fases siguientes se apoyan en ese caso de uso.
+        </p>
+        <div class="rm-grid">
+          <div class="rm-phase p1">
+            <div class="pnum">FASE 01</div>
+            <h3>Foundation</h3>
+            <div class="pq">Q4 2025 → Q1 2026</div>
+            <ul>
+              <li>Contratos en Fuji</li>
+              <li>KYC Sumsub integrado</li>
+              <li>Trade real on-chain</li>
+            </ul>
+            <span class="pstatus">Done</span>
+          </div>
+          <div class="rm-phase p2">
+            <div class="pnum">FASE 02</div>
+            <h3>Pilot Launch</h3>
+            <div class="pq">Q1 → Q2 2026</div>
+            <ul>
+              <li>Primera oferta Arkangeles</li>
+              <li>Sumsub producción</li>
+              <li>Reportes UIF</li>
+            </ul>
+            <span class="pstatus">Now</span>
+          </div>
+          <div class="rm-phase p3">
+            <div class="pnum">FASE 03</div>
+            <h3>Production</h3>
+            <div class="pq">Q3 2026 → Q1 2027</div>
+            <ul>
+              <li>Mainnet C-chain</li>
+              <li>5 IFCs onboard</li>
+              <li>API pública</li>
+            </ul>
+            <span class="pstatus">Next</span>
+          </div>
+          <div class="rm-phase p4">
+            <div class="pnum">FASE 04</div>
+            <h3>Market Expansion</h3>
+            <div class="pq">Q2 2027 →</div>
+            <ul>
+              <li>Subnet propia</li>
+              <li>Dark pool institucional</li>
+              <li>Expansión LATAM</li>
+            </ul>
+            <span class="pstatus">Future</span>
+          </div>
+        </div>
+        <div class="slide-num" style="color: var(--muted-soft);">14 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 15 — LO QUE LES PEDIMOS
+    ============================================================ -->
+    <section class="slide bg-aurora grid-pattern">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>15 · El pedido</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="slide-eyebrow">Tres conversaciones</div>
+        <h2 class="slide-title">Para arrancar la Fase 02 con ustedes.</h2>
+        <p class="slide-lede" style="color: rgba(255,255,255,0.78);">
+          Nada de big-bang. Tres tracks paralelos que se pueden empezar en
+          paralelo a partir de la próxima semana.
+        </p>
+        <div class="ask-grid">
+          <div class="ask">
+            <div class="ico">1</div>
+            <h3>Track legal</h3>
+            <p>
+              Dos semanas con su oficial de cumplimiento para mapear cada
+              obligación contra las pantallas y contratos de ARCA.
+            </p>
+          </div>
+          <div class="ask">
+            <div class="ico">2</div>
+            <h3>Track técnico</h3>
+            <p>
+              Tres semanas para deploy con marca Arkangeles, integración con
+              su KYC actual y prueba end-to-end en testnet con su equipo.
+            </p>
+          </div>
+          <div class="ask">
+            <div class="ico">3</div>
+            <h3>Track piloto</h3>
+            <p>
+              Cuatro semanas con la primera oferta tokenizada, universo
+              limitado de inversionistas calificados y monitoreo cercano.
+            </p>
+          </div>
+        </div>
+        <div class="slide-num">15 / 16</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SLIDE 16 — CIERRE
+    ============================================================ -->
+    <section class="slide bg-aurora grid-pattern">
+      <div class="slide-frame">
+        <div class="slide-top">
+          <span>16 · Cierre</span>
+          <span class="mark">ARCA</span>
+        </div>
+        <div class="closing-content">
+          <div class="ko">Una decisión, dos años de ventaja</div>
+          <h1>
+            El próximo capítulo<br />se llama <span>Arkangeles</span>.
+          </h1>
+          <p>
+            La primera IFC en México operando un mercado secundario regulado
+            on-chain. La narrativa de prensa, el diferenciador competitivo y
+            el camino más limpio para escalar el negocio — en un solo
+            movimiento.
+          </p>
+          <div class="pill-row">
+            <span class="pill solid">Pilot Launch · Q1 2026</span>
+            <span class="pill">Listos para empezar</span>
+          </div>
+        </div>
+        <div class="slide-num">16 / 16</div>
+      </div>
+    </section>
+  </body>
+</html>
