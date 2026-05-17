@@ -22,7 +22,15 @@ export interface ClaimableDividend {
   paymentToken: Address;
   /** claimable amount in base units (0 when already claimed) */
   amount: bigint;
+  /** allocation original — útil para "ya recibí" aunque ya esté reclamado */
+  originalAmount: bigint;
   claimed: boolean;
+  /** Unix seconds — fecha de declaration on-chain */
+  declaredAt: bigint;
+  /** Total holders alocados en el evento (para calcular DPS y promedios) */
+  holderCount: bigint;
+  /** Monto total del evento — sirve para DPS = totalAmount / supply alocado */
+  totalAmount: bigint;
 }
 
 const DISTRIBUTOR = CONTRACT_ADDRESSES.dividendDistributor;
@@ -165,17 +173,31 @@ export function useClaimableDividends(holder: Address | undefined) {
           if (amount === 0n) continue; // holder has no allocation for this dividend
 
           const isClaimed = claim.result as boolean;
-          const divRaw = div.result as unknown as [Address, Address, ...unknown[]];
-          const [token, paymentToken] = divRaw;
+          const divRaw = div.result as unknown as [
+            Address,
+            Address,
+            Address,
+            bigint,
+            bigint,
+            bigint,
+            bigint,
+          ];
+          const [token, paymentToken, , totalAmount, , declaredAt, holderCount] = divRaw;
 
           results.push({
             dividendId: BigInt(i),
             token,
             paymentToken,
             amount: isClaimed ? 0n : amount,
+            originalAmount: amount,
             claimed: isClaimed,
+            declaredAt,
+            holderCount,
+            totalAmount,
           });
         }
+        // Más reciente primero para el timeline.
+        results.sort((a, b) => (b.declaredAt > a.declaredAt ? 1 : -1));
         return results;
       },
     },
@@ -186,29 +208,26 @@ export function useClaimableDividends(holder: Address | undefined) {
  * Returns the total USDC claimable (not yet claimed) across all dividends for a given holder.
  * Suitable for the dashboard banner.
  *
- * Return type is `unknown` for the wagmi spread fields to avoid TS2742
- * (wagmi internal type identifiers are not portable across module paths).
- * Consumers only need `.data`; the rest is opaque metadata.
+ * Explicit return type so the build doesn't try (and fail) to serialise a
+ * type reference into the pnpm-virtual @wagmi/core path, which isn't a
+ * portable identifier in declaration output (TS2742).
  */
-// Explicit return type so the build doesn't try (and fail) to serialise a
-// type reference into the pnpm-virtual @wagmi/core path, which isn't a
-// portable identifier in declaration output.
 export function useTotalClaimable(holder: Address | undefined): {
   data: bigint;
   isLoading: boolean;
   isError: boolean;
+  error: Error | null;
   refetch?: () => unknown;
 } {
-  const { data: claimable, isLoading, isError, refetch } = useClaimableDividends(holder);
+  const { data: claimable, isLoading, isError, error, refetch } = useClaimableDividends(holder);
 
   const total = claimable?.reduce((acc, c) => (c.claimed ? acc : acc + c.amount), 0n) ?? 0n;
 
-  return { data: total, isLoading, isError, refetch };
-  error: Error | null;
-} {
-  const { data: claimable, isLoading, isError, error } = useClaimableDividends(holder);
-
-  const total = claimable?.reduce((acc, c) => (c.claimed ? acc : acc + c.amount), 0n) ?? 0n;
-
-  return { data: total, isLoading, isError, error: error as Error | null };
+  return {
+    data: total,
+    isLoading,
+    isError,
+    error: (error as Error | null) ?? null,
+    refetch,
+  };
 }

@@ -54,7 +54,7 @@ export default function InvestorDashboard() {
   const balances = useWalletBalances();
   const walletAddress = address ?? undefined;
   const { data: portfolio } = usePortfolio(walletAddress);
-  const { data: history } = usePortfolioHistory(walletAddress);
+  const { data: history, isError: historyError } = usePortfolioHistory(walletAddress);
   const { data: offerings } = useOfferings({ status: 'active' });
 
   const totalValue = Number(portfolio?.totalMarketValue ?? 0);
@@ -213,6 +213,10 @@ export default function InvestorDashboard() {
                   data={history.map((p) => ({ ts: p.ts, value: p.value }))}
                   yLabel="Valor"
                 />
+              ) : historyError ? (
+                <div className="flex h-full w-full items-center justify-center text-xs text-foreground-tertiary">
+                  No fue posible cargar el histórico ahora. Refresca la página para reintentar.
+                </div>
               ) : (
                 <Skeleton className="h-full w-full" />
               )}

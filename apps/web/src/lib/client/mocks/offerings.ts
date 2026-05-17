@@ -211,6 +211,8 @@ export const MOCK_OFFERINGS: MockOffering[] = [
   },
 ];
 
+const blankHolder = { holderName: null, holderEmail: null, holderRole: null } as const;
+
 export const MOCK_CAP_TABLE: Record<string, CapTableRowDto[]> = {
   '11111111-1111-1111-1111-111111111111': [
     {
@@ -218,48 +220,56 @@ export const MOCK_CAP_TABLE: Record<string, CapTableRowDto[]> = {
       balance: '4500000',
       percentOfTotal: 9.0,
       lastUpdatedBlock: '1284502',
+      ...blankHolder,
     },
     {
       wallet: '0xbbbb1111bbbb2222bbbb3333bbbb4444bbbb5555',
       balance: '3800000',
       percentOfTotal: 7.6,
       lastUpdatedBlock: '1284498',
+      ...blankHolder,
     },
     {
       wallet: '0xcccc1111cccc2222cccc3333cccc4444cccc5555',
       balance: '2900000',
       percentOfTotal: 5.8,
       lastUpdatedBlock: '1284491',
+      ...blankHolder,
     },
     {
       wallet: '0xdddd1111dddd2222dddd3333dddd4444dddd5555',
       balance: '2400000',
       percentOfTotal: 4.8,
       lastUpdatedBlock: '1284482',
+      ...blankHolder,
     },
     {
       wallet: '0xeeee1111eeee2222eeee3333eeee4444eeee5555',
       balance: '1900000',
       percentOfTotal: 3.8,
       lastUpdatedBlock: '1284476',
+      ...blankHolder,
     },
     {
       wallet: '0xffff1111ffff2222ffff3333ffff4444ffff5555',
       balance: '1700000',
       percentOfTotal: 3.4,
       lastUpdatedBlock: '1284470',
+      ...blankHolder,
     },
     {
       wallet: '0x1234abcd5678ef901234abcd5678ef901234abcd',
       balance: '1500000',
       percentOfTotal: 3.0,
       lastUpdatedBlock: '1284465',
+      ...blankHolder,
     },
     {
       wallet: '0x2345abcd5678ef901234abcd5678ef901234abce',
       balance: '1300000',
       percentOfTotal: 2.6,
       lastUpdatedBlock: '1284460',
+      ...blankHolder,
     },
   ],
 };

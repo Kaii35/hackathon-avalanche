@@ -5,12 +5,20 @@ import { Building2, Coins, PlusCircle, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
 import { AreaTrend } from '@/components/charts/AreaTrend';
 import { useOfferings } from '@/lib/client/queries/offerings';
+import { useSession } from '@/lib/client/queries/session';
 
 export default function IssuerDashboard() {
-  const { data: offerings } = useOfferings();
-  const myOfferings = (offerings ?? []).filter(
-    (o) => o.issuerId === 'a0a00000-0000-0000-0000-000000000001',
-  );
+  const { data: session } = useSession();
+  // "mine: true" → el backend resuelve server-side el Issuer del usuario
+  // autenticado. Antes filtrábamos por un issuerId hardcoded del mock, lo que
+  // dejaba en cero el dashboard para cualquier emisor distinto a Arkangeles.
+  const { data: offerings } = useOfferings({ mine: true });
+  const myOfferings = offerings ?? [];
+
+  // Título: nombre del dueño de la wallet si está registrado, si no el
+  // username del email (parte antes de la @). `displayName` viene resuelto
+  // así desde el backend — ver auth.service.ts.
+  const dashboardTitle = session?.displayName ?? session?.email?.split('@')[0] ?? 'Mi dashboard';
   const totalRaised = myOfferings.reduce(
     (acc, o) => acc + (Number(o.totalSupply) * Number(o.pricePerUnit) * o.fundedPct) / 100,
     0,
@@ -26,7 +34,7 @@ export default function IssuerDashboard() {
   return (
     <>
       <PageHeader
-        title="Arkangeles Capital"
+        title={dashboardTitle}
         description="Vista del emisor: ofertas, holders y volumen secundario."
         meta={
           <Badge variant="success">

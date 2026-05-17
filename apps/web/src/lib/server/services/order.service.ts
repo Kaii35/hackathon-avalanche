@@ -99,8 +99,14 @@ export const orderService = {
     if (!offering) throw new NotFoundError('Oferta');
     if (!offering.tokenAddress) throw new ConflictError('La oferta no tiene token desplegado');
 
+    // Case-insensitive match — Zod ya lowercase'a dto.maker pero el address
+    // en DB puede estar en EIP-55 según cómo se haya linkeado (script, SIWE,
+    // seed). Comparamos sin caso para no exigir convención de storage.
     const ownsWallet = await prisma.wallet.findFirst({
-      where: { userId: actorUserId, address: dto.maker },
+      where: {
+        userId: actorUserId,
+        address: { equals: dto.maker, mode: 'insensitive' },
+      },
     });
     if (!ownsWallet) throw new ForbiddenError('La wallet no pertenece al usuario autenticado');
 
@@ -172,8 +178,12 @@ export const orderService = {
   async cancel(actorUserId: string, orderId: string): Promise<{ cancelled: boolean }> {
     const order = await orderRepo.findById(orderId);
     if (!order) throw new NotFoundError('Orden');
+    // Case-insensitive match (mismo motivo que en create).
     const ownsWallet = await prisma.wallet.findFirst({
-      where: { userId: actorUserId, address: order.makerWallet },
+      where: {
+        userId: actorUserId,
+        address: { equals: order.makerWallet, mode: 'insensitive' },
+      },
     });
     if (!ownsWallet) throw new ForbiddenError('No puedes cancelar órdenes de otra wallet');
 

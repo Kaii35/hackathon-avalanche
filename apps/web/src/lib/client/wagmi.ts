@@ -29,13 +29,17 @@ function buildConfig(): Config {
   } as const;
 
   // Avalanche-native first (Core), then general-purpose wallets.
-  // WalletConnect (mobile QR) is included only when we have a real projectId.
+  // Wallets that require a WalletConnect relay (Rainbow, Trust, the
+  // WalletConnect QR option itself) are excluded when projectId is missing
+  // — otherwise they spam the console with "Connection interrupted while
+  // trying to subscribe" trying to reach Reown's relay anonymously.
   const avalancheGroup = {
     groupName: 'Avalanche',
     wallets: [coreWallet],
   };
-  const popularWallets = [metaMaskWallet, rkCoinbase, rabbyWallet, rainbowWallet, trustWallet];
-  if (HAS_WALLETCONNECT) popularWallets.push(walletConnectWallet);
+  const popularWallets = HAS_WALLETCONNECT
+    ? [metaMaskWallet, rkCoinbase, rabbyWallet, rainbowWallet, trustWallet, walletConnectWallet]
+    : [metaMaskWallet, rkCoinbase, rabbyWallet];
   const popularGroup = {
     groupName: 'Más opciones',
     wallets: [...popularWallets, injectedWallet],

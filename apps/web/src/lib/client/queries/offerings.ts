@@ -57,7 +57,8 @@ export function useOfferings(filters?: OfferingsFilters) {
               (o) =>
                 o.name.toLowerCase().includes(q) ||
                 o.symbol.toLowerCase().includes(q) ||
-                o.issuerName.toLowerCase().includes(q),
+                o.issuerName.toLowerCase().includes(q) ||
+                (o.issuerOwnerName?.toLowerCase().includes(q) ?? false),
             );
           }
           return result;
@@ -101,6 +102,9 @@ export function useCapTable(offeringId: string | undefined) {
               balance: ((10 - i) * 250000).toString(),
               percentOfTotal: (10 - i) * 1.2,
               lastUpdatedBlock: (1284500 - i * 7).toString(),
+              holderName: null,
+              holderEmail: null,
+              holderRole: null,
             }))
           );
         },

@@ -72,6 +72,8 @@ export interface OfferingResponseDto {
   id: string;
   issuerId: string;
   issuerName: string;
+  /** Nombre del usuario dueño de la oferta (resuelto vía Issuer.kycIssuerAddress → Wallet → User). */
+  issuerOwnerName?: string;
   tokenAddress: `0x${string}` | null;
   name: string;
   symbol: string;
@@ -93,6 +95,13 @@ export interface OfferingResponseDto {
   volume24h?: number;
   /** % financiado vs totalSupply — heurística simple para el dashboard. */
   fundedPct?: number;
+  /**
+   * Rendimiento anual esperado en % (e.g., 8 → 8% APY).
+   * Hoy se infiere por símbolo en el servicio (ARKDEMO 8%, SOLNOR 12%, otros 7%)
+   * como dato narrativo para la UI; cuando el Issuer lo declare formalmente,
+   * vendrá del campo persistido en `Offering`.
+   */
+  expectedAnnualReturn?: number;
 }
 
 export interface CapTableRowDto {
@@ -100,4 +109,8 @@ export interface CapTableRowDto {
   balance: string;
   percentOfTotal: number;
   lastUpdatedBlock: string;
+  /** Nombre/email del holder si tenemos un user linkeado a esta wallet en DB. */
+  holderName: string | null;
+  holderEmail: string | null;
+  holderRole: 'investor' | 'issuer' | 'admin' | null;
 }

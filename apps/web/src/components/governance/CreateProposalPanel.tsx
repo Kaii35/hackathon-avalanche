@@ -20,11 +20,10 @@ import {
 import { AlertTriangle, Loader2, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCapTable } from '@/lib/client/queries/offerings';
+import { useCapTable, useOfferings } from '@/lib/client/queries/offerings';
 import { useKycStatus } from '@/hooks/useKycStatus';
-import { ABI, CONTRACT_ADDRESSES, FUJI_DEMO_TOKEN } from '@/lib/client/contracts';
+import { ABI, CONTRACT_ADDRESSES } from '@/lib/client/contracts';
 
-const DEMO_OFFERING_ID = '00000000-0000-4000-8000-000000000001';
 const SNOWSCAN_TX = (hash: string) => `https://testnet.snowscan.xyz/tx/${hash}`;
 
 /** Default voting deadline = now + 7 days, formatted as datetime-local string */
@@ -71,12 +70,32 @@ export function CreateProposalPanel() {
   const { address } = useAccount();
   const qc = useQueryClient();
 
+  // Lista las ofertas del issuer logueado. Si solo tiene una, la usamos.
+  const { data: myOfferings } = useOfferings({ mine: true });
+  const offerings = myOfferings ?? [];
+  const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
+
+  // Auto-selecciona la primera oferta del issuer cuando se cargan.
+  useEffect(() => {
+    if (!selectedOfferingId && offerings.length > 0 && offerings[0]) {
+      setSelectedOfferingId(offerings[0].id);
+    }
+  }, [offerings, selectedOfferingId]);
+
+  const selectedOffering = offerings.find((o) => o.id === selectedOfferingId);
+  const tokenAddress = (selectedOffering?.tokenAddress ?? '') as Address;
+
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState<string>(defaultDeadline);
   const [rows, setRows] = useState<HolderRow[]>([]);
   const [kycWarnShown, setKycWarnShown] = useState(false);
 
-  const { data: capTable, isLoading: capLoading } = useCapTable(DEMO_OFFERING_ID);
+  const { data: capTable, isLoading: capLoading } = useCapTable(selectedOfferingId || undefined);
+
+  // Limpia los holders cuando cambias de oferta — se vuelven a cargar al pulsar el botón.
+  useEffect(() => {
+    setRows([]);
+  }, [selectedOfferingId]);
 
   const loadHolders = useCallback(() => {
     if (!capTable || capTable.length === 0) return;
@@ -141,6 +160,10 @@ export function CreateProposalPanel() {
   const handlePropose = () => {
     const gov = CONTRACT_ADDRESSES.governance;
     if (!gov || !address) return;
+    if (!tokenAddress || tokenAddress.length === 0) {
+      toast.error('Selecciona una oferta primero');
+      return;
+    }
 
     const holders = rows.map((r) => r.wallet);
 
@@ -149,7 +172,7 @@ export function CreateProposalPanel() {
         address: gov as Address,
         abi: ABI.governance,
         functionName: 'propose',
-        args: [FUJI_DEMO_TOKEN, description.trim(), holders, weights, BigInt(deadlineTs)],
+        args: [tokenAddress, description.trim(), holders, weights, BigInt(deadlineTs)],
         chainId: avalancheFuji.id,
       },
       {
@@ -182,10 +205,31 @@ export function CreateProposalPanel() {
       <CardHeader>
         <CardTitle>Nueva propuesta</CardTitle>
         <p className="text-sm text-foreground-secondary">
-          Arkangeles Demo Offering &middot; ARKDEMO
+          {selectedOffering
+            ? `${selectedOffering.name} · ${selectedOffering.symbol}`
+            : 'Selecciona la oferta sobre la que vas a proponer'}
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Offering selector — solo aparece si el issuer tiene >1 oferta. */}
+        {offerings.length > 1 && (
+          <div className="space-y-1.5">
+            <Label htmlFor="propOffering">Oferta</Label>
+            <select
+              id="propOffering"
+              value={selectedOfferingId}
+              onChange={(e) => setSelectedOfferingId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+            >
+              {offerings.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name} · {o.symbol}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Description */}
         <div className="space-y-1.5">
           <Label htmlFor="propDescription">Descripcion de la propuesta</Label>

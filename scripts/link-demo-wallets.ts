@@ -28,6 +28,11 @@ const LINKS = [
     wallet: '0x1ea61078e0479dc83121144a284dd79f5483b6fd',
     label: 'bob (buyer)',
   },
+  {
+    email: 'admin@arkangeles.mx',
+    wallet: '0x66cb45ee3646759179901567fa81fe2eba639278',
+    label: 'deployer (admin + issuer en chain)',
+  },
 ];
 
 async function main() {

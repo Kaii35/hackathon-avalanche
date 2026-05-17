@@ -26,6 +26,8 @@ import { ArrowUpRight, FileText, Globe2, Star } from 'lucide-react';
 import { useOffering, useCapTable } from '@/lib/client/queries/offerings';
 import { useOrderbook } from '@/lib/client/queries/orderbook';
 import { AreaTrend } from '@/components/charts/AreaTrend';
+import { TradingChart } from '@/components/charts/TradingChart';
+import { generateDummyCandles, getHistoricalStartPrice } from '@/lib/client/dummyCandles';
 import { PlaceOrderPanel } from '@/components/offerings/PlaceOrderPanel';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { CapTableRowDto } from '@hack/shared';
@@ -33,11 +35,42 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MOCK_TRADES } from '@/lib/client/mocks/trades';
 
+const ROLE_LABELS: Record<'investor' | 'issuer' | 'admin', string> = {
+  investor: 'Inversionista',
+  issuer: 'Emisor',
+  admin: 'Plataforma',
+};
+
 const capColumns: ColumnDef<CapTableRowDto>[] = [
   {
-    header: 'Wallet',
-    accessorKey: 'wallet',
-    cell: ({ row }) => <WalletAddress address={row.original.wallet} />,
+    header: 'Inversionista',
+    accessorKey: 'holderName',
+    cell: ({ row }) => {
+      const { holderName, holderEmail, holderRole, wallet } = row.original;
+      if (holderName || holderEmail) {
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-foreground">
+              {holderName ?? holderEmail ?? '—'}
+            </span>
+            <div className="flex items-center gap-2">
+              {holderRole && (
+                <Badge variant="outline" size="sm">
+                  {ROLE_LABELS[holderRole]}
+                </Badge>
+              )}
+              <WalletAddress address={wallet} className="text-2xs text-foreground-tertiary" />
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="flex flex-col">
+          <span className="text-sm text-foreground-tertiary italic">Wallet externa</span>
+          <WalletAddress address={wallet} className="text-2xs text-foreground-tertiary" />
+        </div>
+      );
+    },
   },
   {
     header: 'Balance',
@@ -82,6 +115,13 @@ export default function OfferingDetailPage({ params }: { params: Promise<{ id: s
     : offering.lastTradePrice;
   const tradesForOffering = MOCK_TRADES.filter((t) => t.offeringId === id).slice(0, 10);
 
+  // OHLC determinístico por offeringId — el modelo es dummy hasta que el
+  // indexer agregue trades reales por timeframe (ver SESSION-HANDOFF P0.3).
+  // Para tokens con un precio histórico conocido (p.ej. SOLNOR antes del
+  // re-pricing) arrancamos el walk ahí para que la curva refleje la caída.
+  const startPrice = getHistoricalStartPrice(offering.symbol);
+  const candles = generateDummyCandles(id, lastPrice, { startPrice });
+
   return (
     <>
       <PageHeader
@@ -106,7 +146,7 @@ export default function OfferingDetailPage({ params }: { params: Promise<{ id: s
             </Badge>
           </span>
         }
-        description={`${offering.issuerName} · Sector ${offering.sector}`}
+        description={`${offering.issuerOwnerName ?? offering.issuerName} · Sector ${offering.sector}`}
         actions={
           <>
             <Button variant="ghost" size="icon" aria-label="Watchlist">
@@ -149,12 +189,8 @@ export default function OfferingDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="h-72 px-2 pt-4">
-              <AreaTrend
-                data={offering.pricingHistory.map((p) => ({ ts: p.ts, value: p.price }))}
-                color={offering.thumbnailColor}
-                yLabel="Precio"
-              />
+            <CardContent className="px-2 pb-2 pt-3">
+              <TradingChart data={candles} symbol={offering.symbol} height={340} />
             </CardContent>
           </Card>
 
@@ -201,6 +237,14 @@ export default function OfferingDetailPage({ params }: { params: Promise<{ id: s
                         value: format(new Date(offering.lockupUntil), 'd MMM yyyy', { locale: es }),
                       },
                       { label: 'Max holders', value: offering.maxHolders.toLocaleString('es-MX') },
+                      {
+                        label: 'Rendimiento anual esperado',
+                        value: (
+                          <span className="font-semibold text-success-fg">
+                            {(offering.expectedAnnualReturn ?? 0).toFixed(1)}% APY
+                          </span>
+                        ),
+                      },
                       {
                         label: 'Jurisdicciones',
                         value: (
@@ -334,9 +378,9 @@ export default function OfferingDetailPage({ params }: { params: Promise<{ id: s
             bodyClassName="h-48 px-2"
           >
             <AreaTrend
-              data={offering.trend7d.map((value, i) => ({
-                ts: new Date(Date.now() - (6 - i) * 86400000).toISOString(),
-                value,
+              data={candles.slice(-7).map((c) => ({
+                ts: new Date(c.time).toISOString(),
+                value: c.close,
               }))}
               color={offering.thumbnailColor}
             />

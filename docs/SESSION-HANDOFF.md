@@ -1,10 +1,10 @@
 # SESSION HANDOFF — Arca · Mercado Secundario Regulado sobre Avalanche
 
 > **Generado:** 2026-05-16 al final de la primera sesión.
-> **Actualizado:** 2026-05-16 (sesión 2 — Sumsub real, wallet linking real, admin investor view real, landing polish, build verde).
+> **Actualizado:** 2026-05-16 (sesión 4 — multi-issuer real SOLNOR/Alejandro, dividendos UI con DPS+yield+timeline, SOLNOR repriced con caída visible, fallback contracts.ts, dividendId #1 declarado on-chain).
 > **Para retomar:** pega este documento entero al inicio de un nuevo chat de Claude Code, o usa el "READY-TO-PASTE CONTINUATION PROMPT" del final.
 > **Repo:** https://github.com/Kaii35/hackathon-avalanche
-> **Branch:** `main` (working tree limpio; último commit `6173f08` pushed — Sumsub KYC + wallet linking + admin investors + landing polish).
+> **Branch:** `Smartscontracts` (working tree con cambios sin commitear de la sesión 4 — ver sección 17 para detalle).
 
 ---
 
@@ -1476,7 +1476,146 @@ cast send 0x8Db4A89761b208Da299dB9f1979252093A56C45A `
 
 ---
 
-**Fin del handoff. Total: 15 secciones + 4.B (KYC stack) y 16 (Sumsub setup), ~12k palabras de contexto técnico denso. Actualizado 2026-05-16 sesión 2 (commit `6173f08`). Diseñado para que mañana este documento solo + el comando de la sección 14 te permitan retomar sin perder ningún detalle.**
+## 17. Sesión 4 — multi-issuer real, dividendos transparentes, SOLNOR repriced, fix Turbopack
+
+Bloque grande de QA manual sobre las dos pantallas de actos corporativos (dividendos + gobernanza) y el caso de demo del segundo emisor. Todos los cambios on-chain están reflejados en DB; los cambios de UI no requieren migración.
+
+### 17.1 Multi-issuer real (Alejandro López + EnergíaSolar Norte SAPI)
+
+Antes: SOLNOR existía solo en mock, con `pricePerUnit` placeholder; el filtro del dashboard estaba hardcoded al issuerId de Arkangeles → cualquier issuer distinto veía 0 ofertas.
+
+Cambios:
+
+- **`scripts/setup-new-issuer-and-rewire.ts`** (sesión 3 previo, vigente): generó la wallet de ajelandro `0x3A1D811afAcacea8e205Fcb3C8a70E628d096FF2` (key `0x2874aeeb61ee517793e5eac2a8d89219808f6211afecde729d875d0ca0e20cd6`), la fundeó con AVAX, hizo KYC on-chain y reasignó bob → diego.morales. Sin cambios esta sesión, pero documentado aquí porque es el contexto inicial.
+- **`scripts/deploy-solnor-real.ts`** (sesión 3 previo): `TokenFactory.deployOffering` con `issuerAdmin = ajelandro` → SOLNOR real en `0x791fC7021b2A8c8619F7daf980c26809Db90B6Dc`. Mintea 250k a ajelandro, transfer 5k a alice + 5k a diego, approve Settlement.
+- **`scripts/fix-solnor-issuer.ts`** (sesión 3 previo): creó Issuer entity "EnergíaSolar Norte SAPI" con id determinístico, reasignó `SOLNOR.issuerId` y seteó `firstName/lastName` de ajelandro a "Alejandro López".
+- **Issuer offering id en DB:** `81504844-cfbb-41be-a723-d2c3d7273b01`.
+
+**Sesión 4 — qué se arregló sobre eso:**
+
+- **`/issuer/page.tsx`** ([apps/web/src/app/(app)/issuer/page.tsx](<apps/web/src/app/(app)/issuer/page.tsx>)):
+  - Antes: `<PageHeader title="Arkangeles Capital" …/>` + `useOfferings()` filtrado por `issuerId === 'a0a00000-…'` (mock). Cualquier issuer real veía título equivocado y ofertas vacías.
+  - Ahora: `useSession()` resuelve el `displayName` (firstName + lastName si existe, fallback a `email.split('@')[0]`). `useOfferings({ mine: true })` resuelve server-side las ofertas del issuer autenticado. El KPI "Ofertas activas" cuenta las reales.
+
+### 17.2 DeclareDividendPanel + CreateProposalPanel — multi-offering
+
+Antes ambos paneles tenían `DEMO_OFFERING_ID` y `FUJI_DEMO_TOKEN` hardcoded a ARKDEMO → ajelandro no podía declarar dividendo/propuesta para SOLNOR aunque fuera su issuer admin on-chain.
+
+Cambios:
+
+- **[apps/web/src/components/dividends/DeclareDividendPanel.tsx](apps/web/src/components/dividends/DeclareDividendPanel.tsx)** y **[apps/web/src/components/governance/CreateProposalPanel.tsx](apps/web/src/components/governance/CreateProposalPanel.tsx)** ahora:
+  - Leen `useOfferings({ mine: true })` para listar las ofertas del issuer logueado.
+  - Auto-seleccionan la primera y muestran un selector `<select>` cuando hay >1.
+  - `tokenAddress` se deriva dinámicamente de `selectedOffering?.tokenAddress` — la guarda `toast.error('Selecciona una oferta primero')` cubre el caso `null`.
+  - Header dinámico: `${selectedOffering.name} · ${selectedOffering.symbol}`.
+  - Columna "Balance ${symbol}" en el panel de dividendos también dinámica.
+- **DeclareDividendPanel** además: el linter agregó manejo de errores adicional para `writeError` y `receiptError` con toasts (cubre wallet rejection, chain wrong, allowance insuficiente).
+
+### 17.3 `expectedAnnualReturn` — APY narrativo por símbolo
+
+Para que cada oferta muestre una "tasa anual esperada" antes de la primera distribución real.
+
+- **DTO** ([packages/shared/src/dto/offering.dto.ts](packages/shared/src/dto/offering.dto.ts)): nuevo campo `expectedAnnualReturn?: number` (% APY).
+- **Service** ([apps/web/src/lib/server/services/offering.service.ts](apps/web/src/lib/server/services/offering.service.ts)): `expectedAnnualReturnFor(symbol)` devuelve `8` para ARKDEMO, `12` para SOLNOR, `6..11` determinístico por hash para cualquier otro. Inyectado en `enrichWithMetrics`.
+- **UI**:
+  - [investor/offerings/[id]/page.tsx](<apps/web/src/app/(app)/investor/offerings/[id]/page.tsx>) y [issuer/offerings/[id]/page.tsx](<apps/web/src/app/(app)/issuer/offerings/[id]/page.tsx>) — nueva fila "Rendimiento anual esperado" en Términos / Fondeo.
+  - [OfferingCard.tsx](apps/web/src/components/offerings/OfferingCard.tsx) — badge `{X.X}% APY est.` visible desde el listado de marketplace.
+
+Cuando el Issuer declare formalmente el APY en su formulario, esto pasará a venir de DB; por ahora es heurística por símbolo.
+
+### 17.4 `/investor/dividends` — KPIs + agrupado por oferta + DPS + yield realizado
+
+Refactor completo de [apps/web/src/app/(app)/investor/dividends/page.tsx](<apps/web/src/app/(app)/investor/dividends/page.tsx>). Diseño basado en el flujo regulado: declaration → record → ex-dividend → payment date, mapeado al contrato `DividendDistributor` (declare = decl + record + payment fund, claim = pull a discreción).
+
+Contenido nuevo:
+
+- **4 KPI cards globales:** Recibido lifetime, Por reclamar ahora, Ya cobrado (con % de su asignación), Ofertas que reparten.
+- **Una card por oferta donde el holder tiene asignación.** Cada card incluye:
+  - Header con nombre + símbolo + balance del holder + total recibido lifetime + **yield realizado sobre su posición** (suma de dividendos / balance × pricePerUnit).
+  - Subheader con: progreso de cobro (Progress bar), pendiente de reclamar (USDC), próxima fecha estimada (último evento + 90 días) + APY esperado.
+  - **Timeline por evento**: fecha, monto USDC, **DPS** (USDC/share calculado contra balance actual), botón Claim si pendiente.
+- **Nota metodológica al pie:** documenta la limitación honesta — DPS exacto solo si el holder no transfirió shares entre snapshot y now; yield es estimación contra balance × precio nominal.
+
+### 17.5 `/issuer/dividends` — KPIs agregados + DPS + claim rate + próxima fecha
+
+Refactor de [apps/web/src/app/(app)/issuer/dividends/page.tsx](<apps/web/src/app/(app)/issuer/dividends/page.tsx>). Mismo enfoque desde el lado del emisor.
+
+- **4 KPI cards:** Total distribuido lifetime, Ya reclamado, Pasivo pendiente (USDC en pool), Ofertas con pago.
+- **Una card por cada oferta del issuer** (incluyendo ofertas sin pagos todavía — útil para "tengo SOLNOR pero aún no he repartido"). Header con total lifetime + DPS promedio + claim rate (Progress con tone) + pendiente en pool + próxima fecha sugerida + APY ofrecido.
+- **Tabla por evento** con DPS (= totalAmount / supply total), reclamado con badge %, holders, link a Snowscan.
+- Sidebar conserva `DeclareDividendPanel` con su selector dinámico.
+
+### 17.6 `useDividends.ts` extendido
+
+[apps/web/src/hooks/useDividends.ts](apps/web/src/hooks/useDividends.ts) — `ClaimableDividend` ahora incluye `originalAmount` (alocado independientemente de claim), `declaredAt`, `holderCount`, `totalAmount`. Resultados ordenados por fecha descendente. Sin cambios en el contrato — datos ya estaban en el multicall.
+
+### 17.7 SOLNOR repriced (210.75 → 42.50) con caída visible en timeline
+
+Caso de demo solicitado: SOLNOR debe cotizar < 50 USDC y mostrar una corrección reciente en el chart.
+
+- **Seed** ([packages/database/prisma/seed.ts](packages/database/prisma/seed.ts)): `pricePerUnit` 210.75 → 42.50. Solo aplica a futuros seeds.
+- **`generateDummyCandles`** ([apps/web/src/lib/client/dummyCandles.ts](apps/web/src/lib/client/dummyCandles.ts)):
+  - Acepta `options.startPrice` opcional. Si se pasa, el random walk arranca ahí en lugar del default `70%–110% del lastPrice` → la serie deriva hacia `lastPrice` con drift, mostrando caída si `startPrice > lastPrice`.
+  - Nuevo helper `getHistoricalStartPrice(symbol)`: para SOLNOR devuelve `210.75`, para los demás `undefined` (preserva comportamiento original).
+- **Pantallas de detalle** ([investor/offerings/[id]](<apps/web/src/app/(app)/investor/offerings/[id]/page.tsx>) e [issuer/offerings/[id]](<apps/web/src/app/(app)/issuer/offerings/[id]/page.tsx>)) — ambas cablean el helper y pasan `startPrice` al generador.
+- **Script `scripts/update-solnor-price.ts` — APPEND-ONLY** (importante: usuario pidió explícitamente no destruir el historial existente):
+  - `UPDATE offering.pricePerUnit` 210.75 → 42.50.
+  - Inserta 16 trades nuevos en los últimos 14 días con curva ease-out cuadrática de $210 → $42.50, incluyendo 3 trades en las últimas 24h para volumen visible.
+  - Trade más reciente fijado en exactamente $42.50 → ese es el `lastTradePrice` que `aggregateMetrics` lee.
+  - Guard de idempotencia: si el último trade ya está en target, skippea para no acumular ruido.
+  - Carga `.env` del repo root via `dotenv` con `path.resolve(__dirname, '..', '.env')` — no requiere `dotenv-cli` global.
+  - **Ejecutado contra Supabase**, log: `Offering.pricePerUnit: 210.75 → 42.50`, `Añadidos 16 trades`, `Historial previo intacto: 2 trades + 2 orders`. ✅
+
+### 17.8 Bug fix: Turbopack no inyecta `NEXT_PUBLIC_*` vía `dotenv-cli`
+
+Bug nuevo descubierto en QA del usuario. Síntoma: toast "Contratos no configurados — Falta NEXT_PUBLIC_DIVIDEND_DISTRIBUTOR, NEXT_PUBLIC_USDC" al declarar dividendo desde la UI, aunque las vars existen en `.env` del root y `dotenv-cli` las carga correctamente al `process.env` del server.
+
+**Causa raíz:** Turbopack (Next 15) **solo lee `.env*` del cwd del proyecto Next (`apps/web/`)**. Las variables que `dotenv-cli` inyecta antes de arrancar `next dev` NO se reenvían al bundle del cliente con Turbopack. Webpack sí las inyectaba; Turbopack rompió esta convención.
+
+**Fix doble (defensa en profundidad):**
+
+1. **`apps/web/.env.local`** ([apps/web/.env.local](apps/web/.env.local)) — espejo de las `NEXT_PUBLIC_*` del `.env` del root. Ignorado por `.gitignore`. Cuando se crea, Next imprime `- Environments: .env.local` al arrancar, confirmando lectura. **Hay que regenerarlo si el deploy actualiza direcciones**: `grep '^NEXT_PUBLIC_' ../../.env > apps/web/.env.local`.
+2. **Fallback hardcoded** en [apps/web/src/lib/client/contracts.ts](apps/web/src/lib/client/contracts.ts) — `addr()` ahora devuelve la dirección del deploy de Fuji actual si `process.env[key]` falta o es vacío. `CONTRACT_ADDRESSES.*` nunca son `null`. El toast "Contratos no configurados" físicamente no puede dispararse mientras el deploy de Fuji sea el actual. Si re-deployás, actualiza `FUJI_FALLBACK` en ese archivo además de `.env` y `.env.local`.
+
+### 17.9 Declaración manual de dividendo on-chain — `scripts/declare-solnor-dividend.ts`
+
+Para tener el dividendo declarado sin depender del browser/wallet/UI. Script nuevo:
+
+- Conecta como ajelandro via viem + `privateKeyToAccount`.
+- Lee balanceOf de SOLNOR para los 3 holders conocidos (ajelandro, alice, diego) — el cap table es el on-chain real.
+- Computa pro-rata: `totalUSDC × balance / sumBalances`; último absorbe el remainder.
+- Si ajelandro no tiene USDC, **auto-mintea** con `MockUSDC.mint(to, amount)` (es público sin restricción, solo testnet).
+- Approve USDC al `DividendDistributor`.
+- Llama `declare(token, paymentToken, holders, amounts)`.
+- Parsea `DividendDeclared` event y imprime `dividendId`, hashes, link Snowscan.
+
+**Ejecutado:**
+
+- TX mint: [`0x1503105…`](https://testnet.snowscan.xyz/tx/0x150310518e56b3bb32cff6660e692e6093b83a1a6a26707d569d3a555e3562f6) — 100 USDC a ajelandro.
+- TX approve: `0x2fdc4735…`.
+- TX declare: [`0x2ae2b7b…`](https://testnet.snowscan.xyz/tx/0x2ae2b7bfa421b48b4b03084e5341bff72a7182930089f6e082e0f66a6dc4bbc6) en block 55451272.
+- **`dividendId = 1`**, totalAmount = 20 USDC, holderCount = 3.
+- Distribución: Ajelandro 19.2 USDC (240k SOLNOR · 96%), Alice 0.4 USDC (5k · 2%), Diego 0.4 USDC (5k · 2%).
+
+El UI de `/investor/dividends` muestra el evento pendiente para Alice y Diego (cuando entren con su wallet), con DPS = `0.0000800` USDC/SOLNOR.
+
+### 17.10 Cambios menores
+
+- **Mocks tipados**: `MOCK_CAP_TABLE` en [mocks/offerings.ts](apps/web/src/lib/client/mocks/offerings.ts) y el fallback sintético en [queries/offerings.ts](apps/web/src/lib/client/queries/offerings.ts) ahora incluyen `holderName: null`, `holderEmail: null`, `holderRole: null` (campos que CapTableRowDto exigía pero los mocks no rellenaban).
+- **Progress.tone**: la prop no admite `'neutral'`. En `/issuer/dividends` se cambió a `'brand'` como fallback.
+- **`scripts/update-solnor-price.ts`** y **`scripts/declare-solnor-dividend.ts`** son llamables con `pnpm --filter @hack/database exec tsx ../../scripts/<nombre>.ts` (workaround porque `tsx` no está en el root y `dotenv-cli` no expone `tsx`).
+
+### 17.11 Pending / siguiente sesión
+
+- **Probar gobernanza desde la UI** — el usuario ya eligió: crear propuesta "Ratificar dividendo Q1 2026 — 20 USDC distribuidos pro-rata sobre el cap table (dividendId #1)" desde `/issuer/governance` conectado como Alejandro. Luego votar desde Alice + Diego en `/investor/governance`. Finalizar.
+- **Confirmar que el toast no vuelve**: con el fallback en `contracts.ts`, abrir `/issuer/dividends` con hard refresh (Ctrl+Shift+R) y verificar que ya no aparece "Contratos no configurados" aunque la env var no llegue al bundle.
+- **Persistir purchasedAt por holder** (deuda técnica): el yield realizado del investor hoy se calcula contra `balance × pricePerUnit` (estimación). Para que sea exacto, el indexer debe registrar el `block.timestamp` del primer Transfer entrante de cada holder por token.
+- **`expectedAnnualReturn` declarado por el issuer** (no inferido): agregar campo al formulario "Crear oferta" y persistirlo en DB; deprecar el helper `expectedAnnualReturnFor(symbol)` cuando los datos reales lleguen.
+- **12 errores TS pre-existentes** de `adminInvite` siguen pendientes — requieren `pnpm prisma generate` con el dev server detenido (Windows file-lock). No bloquean ningún flujo.
+
+---
+
+**Fin del handoff. Total: 17 secciones + 4.B (KYC stack) y 16 (Sumsub setup), ~14k palabras de contexto técnico denso. Última actualización: 2026-05-16 sesión 4 (rama `Smartscontracts`, sin commit). Diseñado para que mañana este documento solo + el comando de la sección 14 te permitan retomar sin perder ningún detalle.**
 
 ---
 

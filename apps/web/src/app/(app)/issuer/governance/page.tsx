@@ -21,6 +21,7 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CreateProposalPanel } from '@/components/governance/CreateProposalPanel';
 import { useAllProposals, type ProposalSummary, type ProposalStatus } from '@/hooks/useGovernance';
+import { useWallet } from '@/hooks/useWallet';
 import { ABI, CONTRACT_ADDRESSES } from '@/lib/client/contracts';
 
 const SNOWSCAN_TX = (hash: string) => `https://testnet.snowscan.xyz/tx/${hash}`;
@@ -144,7 +145,14 @@ function FinalizeButton({ proposal }: FinalizeButtonProps) {
 }
 
 export default function IssuerGovernancePage() {
-  const { data: proposals, isLoading } = useAllProposals();
+  const { address } = useWallet();
+  const { data: allProposals, isLoading } = useAllProposals();
+
+  // Filtrar a las propuestas que ESTE issuer creó (proposedBy == su wallet).
+  // Si no hay wallet, mostramos todas (admin de plataforma puede ver el global).
+  const proposals = address
+    ? (allProposals ?? []).filter((p) => p.proposedBy.toLowerCase() === address.toLowerCase())
+    : allProposals;
 
   return (
     <>

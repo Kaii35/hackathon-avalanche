@@ -23,7 +23,7 @@ export function OfferingCard({ offering }: { offering: MockOffering }) {
           <div>
             <h3 className="text-sm font-semibold text-foreground">{offering.name}</h3>
             <p className="text-xs text-foreground-tertiary">
-              {offering.issuerName} · {offering.symbol}
+              {offering.issuerOwnerName ?? offering.issuerName} · {offering.symbol}
             </p>
           </div>
         </div>
@@ -39,12 +39,19 @@ export function OfferingCard({ offering }: { offering: MockOffering }) {
             <Money value={offering.lastTradePrice} currency="USDC" decimals={2} />
           </p>
         </div>
-        <Sparkline
-          data={offering.trend7d}
-          width={80}
-          height={28}
-          stroke={trendUp ? '#34D399' : '#F87171'}
-        />
+        <div className="flex flex-col items-end gap-1">
+          {offering.expectedAnnualReturn !== undefined && (
+            <span className="text-2xs font-semibold tabular text-success-fg">
+              {offering.expectedAnnualReturn.toFixed(1)}% APY est.
+            </span>
+          )}
+          <Sparkline
+            data={offering.trend7d}
+            width={80}
+            height={28}
+            stroke={trendUp ? '#34D399' : '#F87171'}
+          />
+        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-border-subtle pt-3">

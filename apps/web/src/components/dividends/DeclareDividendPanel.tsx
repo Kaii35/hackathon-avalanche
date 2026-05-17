@@ -18,13 +18,12 @@ import {
 } from '@hack/ui';
 import { AlertTriangle, Loader2, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCapTable } from '@/lib/client/queries/offerings';
+import { useCapTable, useOfferings } from '@/lib/client/queries/offerings';
 import { useKycStatus } from '@/hooks/useKycStatus';
-import { ABI, CONTRACT_ADDRESSES, FUJI_DEMO_TOKEN } from '@/lib/client/contracts';
+import { ABI, CONTRACT_ADDRESSES } from '@/lib/client/contracts';
 import { ApproveDividendDistributorButton } from './ApproveDividendDistributorButton';
 import { useQueryClient } from '@tanstack/react-query';
 
-const DEMO_OFFERING_ID = '00000000-0000-4000-8000-000000000001';
 const SNOWSCAN_TX = (hash: string) => `https://testnet.snowscan.xyz/tx/${hash}`;
 
 // USDC has 6 decimals
@@ -83,15 +82,44 @@ export function DeclareDividendPanel() {
   const { address } = useAccount();
   const qc = useQueryClient();
 
+  // Lista las ofertas del issuer logueado. Auto-selecciona la primera.
+  const { data: myOfferings } = useOfferings({ mine: true });
+  const offerings = myOfferings ?? [];
+  const [selectedOfferingId, setSelectedOfferingId] = useState<string>('');
+
+  useEffect(() => {
+    if (!selectedOfferingId && offerings.length > 0 && offerings[0]) {
+      setSelectedOfferingId(offerings[0].id);
+    }
+  }, [offerings, selectedOfferingId]);
+
+  const selectedOffering = offerings.find((o) => o.id === selectedOfferingId);
+  const tokenAddress = (selectedOffering?.tokenAddress ?? '') as Address;
+
   const [totalInput, setTotalInput] = useState('');
   const [rows, setRows] = useState<HolderRow[]>([]);
   const [kycWarnShown, setKycWarnShown] = useState(false);
 
-  const { data: capTable, isLoading: capLoading } = useCapTable(DEMO_OFFERING_ID);
+  const { data: capTable, isLoading: capLoading } = useCapTable(selectedOfferingId || undefined);
+
+  // Limpia los holders al cambiar de oferta — se vuelven a cargar al pulsar el botón.
+  useEffect(() => {
+    setRows([]);
+  }, [selectedOfferingId]);
 
   // Load cap table rows into state
   const loadHolders = useCallback(() => {
-    if (!capTable || capTable.length === 0) return;
+    if (!capTable) {
+      toast.error('Cap table no disponible todavía');
+      return;
+    }
+    if (capTable.length === 0) {
+      toast.error('No hay holders para esta oferta', {
+        description:
+          'Necesitas mintear o tener al menos un holder en el cap table antes de declarar un dividendo.',
+      });
+      return;
+    }
     const totalUsdc = parseUsdcInput(totalInput);
     const balances = capTable.map((r) => BigInt(r.balance));
     const allocs = computeProRata(totalUsdc, balances);
@@ -141,8 +169,18 @@ export function DeclareDividendPanel() {
     !sumMismatch;
 
   // Write contract
-  const { data: txHash, writeContract, isPending: isWaitingWallet } = useWriteContract();
-  const { isLoading: isMining, isSuccess: isMined } = useWaitForTransactionReceipt({
+  const {
+    data: txHash,
+    writeContract,
+    isPending: isWaitingWallet,
+    error: writeError,
+    reset: resetWrite,
+  } = useWriteContract();
+  const {
+    isLoading: isMining,
+    isSuccess: isMined,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({
     hash: txHash,
     chainId: avalancheFuji.id,
   });
@@ -167,10 +205,70 @@ export function DeclareDividendPanel() {
     setRows([]);
   }, [isMined, txHash, qc]);
 
+  // Surface wallet rejection / chain errors that wagmi captures pero que de
+  // otra forma quedarían silenciosos (el caso típico: usuario cancela, allowance
+  // insuficiente, o chain id distinto a Fuji).
+  useEffect(() => {
+    if (!writeError) return;
+    const msg = (writeError as Error).message ?? 'Error al enviar la transacción';
+    toast.error('No se pudo declarar el dividendo', {
+      description: msg.slice(0, 240),
+    });
+    resetWrite();
+  }, [writeError, resetWrite]);
+
+  useEffect(() => {
+    if (!receiptError) return;
+    toast.error('La transacción se revirtió en la red', {
+      description: (receiptError as Error).message?.slice(0, 240) ?? '',
+    });
+  }, [receiptError]);
+
   const handleDeclare = () => {
     const distributor = CONTRACT_ADDRESSES.dividendDistributor;
     const usdc = CONTRACT_ADDRESSES.usdc;
-    if (!distributor || !usdc || !address) return;
+    if (!address) {
+      toast.error('Conecta tu wallet para declarar');
+      return;
+    }
+    if (!distributor || !usdc) {
+      const missing = [
+        !distributor && 'NEXT_PUBLIC_DIVIDEND_DISTRIBUTOR',
+        !usdc && 'NEXT_PUBLIC_USDC',
+      ]
+        .filter(Boolean)
+        .join(', ');
+      toast.error('Contratos no configurados', {
+        description: `Falta ${missing}. Si ya están en el .env, reinicia "pnpm dev" — las NEXT_PUBLIC_* se inyectan al compilar el bundle.`,
+      });
+      return;
+    }
+    if (!tokenAddress || tokenAddress.length === 0) {
+      toast.error('Selecciona una oferta primero');
+      return;
+    }
+    if (rows.length === 0) {
+      toast.error('Carga los holders desde el cap table', {
+        description: 'Pulsa "Cargar holders desde cap table" antes de declarar.',
+      });
+      return;
+    }
+    if (totalInputBigInt === 0n) {
+      toast.error('Ingresa un monto total mayor a 0');
+      return;
+    }
+    if (hasDuplicates) {
+      toast.error('Hay wallets duplicadas en la lista');
+      return;
+    }
+    if (zeroAmountHolders) {
+      toast.error('Todos los holders deben tener un monto mayor a 0');
+      return;
+    }
+    if (sumMismatch) {
+      toast.error('La suma de allocations no coincide con el monto total');
+      return;
+    }
 
     const holders = rows.map((r) => r.wallet);
     const amounts = allocBigInts;
@@ -179,7 +277,7 @@ export function DeclareDividendPanel() {
       address: distributor as Address,
       abi: ABI.dividendDistributor,
       functionName: 'declare',
-      args: [FUJI_DEMO_TOKEN, usdc as Address, holders, amounts],
+      args: [tokenAddress, usdc as Address, holders, amounts],
       chainId: avalancheFuji.id,
     });
   };
@@ -201,10 +299,31 @@ export function DeclareDividendPanel() {
       <CardHeader>
         <CardTitle>Declarar dividendo</CardTitle>
         <p className="text-sm text-foreground-secondary">
-          Arkangeles Demo Offering &middot; ARKDEMO
+          {selectedOffering
+            ? `${selectedOffering.name} · ${selectedOffering.symbol}`
+            : 'Selecciona la oferta sobre la que vas a distribuir'}
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Offering selector — solo aparece si el issuer tiene >1 oferta. */}
+        {offerings.length > 1 && (
+          <div className="space-y-1.5">
+            <Label htmlFor="divOffering">Oferta</Label>
+            <select
+              id="divOffering"
+              value={selectedOfferingId}
+              onChange={(e) => setSelectedOfferingId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+            >
+              {offerings.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name} · {o.symbol}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Total amount input */}
         <div className="space-y-1.5">
           <Label htmlFor="totalUsdc">Monto total a distribuir (USDC)</Label>
@@ -257,7 +376,9 @@ export function DeclareDividendPanel() {
               <thead className="bg-elevated/60">
                 <tr className="border-b border-border-subtle text-2xs uppercase tracking-wider text-foreground-tertiary">
                   <th className="px-4 py-2.5 text-left font-medium">Holder</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Balance ARKDEMO</th>
+                  <th className="px-4 py-2.5 text-right font-medium">
+                    Balance {selectedOffering?.symbol ?? 'tokens'}
+                  </th>
                   <th className="px-4 py-2.5 text-right font-medium">USDC a recibir</th>
                 </tr>
               </thead>
@@ -359,8 +480,10 @@ export function DeclareDividendPanel() {
         {/* Approve USDC for the distributor */}
         {isFormValid && <ApproveDividendDistributorButton requiredAmount={totalInputBigInt} />}
 
-        {/* Declare button */}
-        <Button className="w-full" onClick={handleDeclare} disabled={!isFormValid || isPending}>
+        {/* Declare button — siempre clickeable salvo mientras espera wallet/red;
+            la validación se hace dentro de handleDeclare y avisa por toast para
+            que el usuario sepa qué falta en lugar de ver un botón gris sin pista. */}
+        <Button className="w-full" onClick={handleDeclare} disabled={isPending}>
           {isPending ? (
             <>
               <Loader2 className="animate-spin" />
@@ -375,6 +498,21 @@ export function DeclareDividendPanel() {
             'Declarar dividendo'
           )}
         </Button>
+        {!isFormValid && !isPending && (
+          <p className="text-center text-2xs text-foreground-tertiary">
+            {rows.length === 0
+              ? 'Carga los holders desde el cap table para continuar.'
+              : totalInputBigInt === 0n
+                ? 'Ingresa el monto total a distribuir.'
+                : hasDuplicates
+                  ? 'Hay wallets duplicadas en la lista.'
+                  : zeroAmountHolders
+                    ? 'Todos los holders deben tener un monto > 0.'
+                    : sumMismatch
+                      ? 'La suma de allocations no coincide con el total.'
+                      : 'Completa los datos para declarar.'}
+          </p>
+        )}
 
         {!address && (
           <p className="text-center text-xs text-foreground-tertiary">

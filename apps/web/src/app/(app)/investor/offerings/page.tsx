@@ -48,7 +48,8 @@ export default function MarketplacePage() {
         (o) =>
           o.name.toLowerCase().includes(q) ||
           o.symbol.toLowerCase().includes(q) ||
-          o.issuerName.toLowerCase().includes(q),
+          o.issuerName.toLowerCase().includes(q) ||
+          (o.issuerOwnerName?.toLowerCase().includes(q) ?? false),
       );
     }
     if (sector !== 'Todos') list = list.filter((o) => o.sector === sector);

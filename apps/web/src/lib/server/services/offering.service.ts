@@ -31,11 +31,13 @@ function toResponse(o: {
   tokenAddress: string | null;
   createdAt: Date;
   issuer: { name: string };
+  issuerOwnerName?: string;
 }): OfferingResponseDto {
   return {
     id: o.id,
     issuerId: o.issuerId,
     issuerName: o.issuer.name,
+    issuerOwnerName: o.issuerOwnerName,
     tokenAddress: o.tokenAddress as `0x${string}` | null,
     name: o.name,
     symbol: o.symbol,
@@ -50,6 +52,31 @@ function toResponse(o: {
     status: o.status,
     createdAt: o.createdAt.toISOString(),
   };
+}
+
+/**
+ * Resuelve el nombre del usuario dueño de un Issuer matcheando su
+ * `kycIssuerAddress` contra `Wallet.address`. Issuer no tiene FK directa a
+ * User, pero ensureForUser() siempre setea kycIssuerAddress a la wallet
+ * primaria del usuario que registra el emisor, así que este lookup es estable.
+ *
+ * Batched para evitar N+1 en list().
+ */
+async function resolveOwnerNames(kycAddresses: string[]): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(kycAddresses.map((a) => a.toLowerCase()))).filter(Boolean);
+  if (unique.length === 0) return new Map();
+  const wallets = await prisma.wallet.findMany({
+    where: { address: { in: unique, mode: 'insensitive' } },
+    include: { user: { select: { firstName: true, lastName: true, email: true } } },
+  });
+  const map = new Map<string, string>();
+  for (const w of wallets) {
+    const { firstName, lastName, email } = w.user;
+    const full = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(' ');
+    const display = full || email.split('@')[0]?.replace(/\./g, ' ') || email;
+    map.set(w.address.toLowerCase(), display);
+  }
+  return map;
 }
 
 /**
@@ -107,10 +134,28 @@ async function aggregateMetrics(
   return map;
 }
 
+/**
+ * Rendimiento anual esperado por símbolo. Hoy es un dato narrativo (la UI lo
+ * muestra como "tasa estimada" para que los inversionistas tengan referencia
+ * antes de la primera distribución real). Cuando el Issuer lo declare en el
+ * formulario de creación pasará a vivir en Offering y este fallback solo
+ * cubrirá los demos preexistentes.
+ */
+function expectedAnnualReturnFor(symbol: string): number {
+  const upper = symbol.toUpperCase();
+  if (upper === 'ARKDEMO') return 8;
+  if (upper === 'SOLNOR') return 12;
+  // Hash determinístico sobre el símbolo → 6%..11% para cualquier otro demo.
+  let h = 0;
+  for (const ch of upper) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return 6 + (h % 6);
+}
+
 function enrichWithMetrics(
   base: OfferingResponseDto,
   metrics?: { holders: number; lastTradePrice?: number; volume24h: number },
 ): OfferingResponseDto {
+  const expectedAnnualReturn = expectedAnnualReturnFor(base.symbol);
   if (!metrics) {
     return {
       ...base,
@@ -118,6 +163,7 @@ function enrichWithMetrics(
       volume24h: 0,
       lastTradePrice: Number(base.pricePerUnit),
       fundedPct: 0,
+      expectedAnnualReturn,
     };
   }
   const totalSupplyNum = Number(base.totalSupply);
@@ -133,13 +179,20 @@ function enrichWithMetrics(
     volume24h: Number(metrics.volume24h.toFixed(2)),
     lastTradePrice: metrics.lastTradePrice ?? Number(base.pricePerUnit),
     fundedPct,
+    expectedAnnualReturn,
   };
 }
 
 export const offeringService = {
   async list(q: OfferingsQueryDto) {
     const { items, total } = await offeringRepo.list(q);
-    const base = items.map(toResponse);
+    const ownerNames = await resolveOwnerNames(items.map((i) => i.issuer.kycIssuerAddress));
+    const base = items.map((o) =>
+      toResponse({
+        ...o,
+        issuerOwnerName: ownerNames.get(o.issuer.kycIssuerAddress.toLowerCase()),
+      }),
+    );
     const metrics = await aggregateMetrics(base.map((b) => b.id));
     return {
       items: base.map((b) => enrichWithMetrics(b, metrics.get(b.id))),
@@ -152,7 +205,11 @@ export const offeringService = {
   async get(id: string): Promise<OfferingResponseDto> {
     const o = await offeringRepo.findById(id);
     if (!o) throw new NotFoundError('Oferta');
-    const base = toResponse(o);
+    const ownerNames = await resolveOwnerNames([o.issuer.kycIssuerAddress]);
+    const base = toResponse({
+      ...o,
+      issuerOwnerName: ownerNames.get(o.issuer.kycIssuerAddress.toLowerCase()),
+    });
     const metrics = await aggregateMetrics([id]);
     return enrichWithMetrics(base, metrics.get(id));
   },
@@ -314,11 +371,51 @@ export const offeringService = {
     const offering = await offeringRepo.findById(offeringId);
     if (!offering) throw new NotFoundError('Oferta');
     const rows = await offeringRepo.capTable(offeringId);
-    return rows.map((r) => ({
-      wallet: r.wallet as `0x${string}`,
-      balance: r.balance.toString(),
-      percentOfTotal: Number(r.percentOfTotal),
-      lastUpdatedBlock: r.lastUpdatedBlock.toString(),
-    }));
+
+    // Enriquecer con nombre del holder cuando una wallet matchea un user.
+    // 1 query batched en lugar de N para evitar N+1.
+    const wallets = rows.map((r) => r.wallet.toLowerCase());
+    const userWallets =
+      wallets.length === 0
+        ? []
+        : await prisma.wallet.findMany({
+            where: { address: { in: wallets, mode: 'insensitive' } },
+            include: {
+              user: { select: { email: true, firstName: true, lastName: true, role: true } },
+            },
+          });
+
+    // Map wallet (lowercase) → user info
+    const byWallet = new Map<
+      string,
+      { name: string | null; email: string; role: 'investor' | 'issuer' | 'admin' }
+    >();
+    for (const w of userWallets) {
+      const u = w.user;
+      const first = u.firstName?.trim();
+      const last = u.lastName?.trim();
+      const displayName =
+        first || last
+          ? [first, last].filter(Boolean).join(' ')
+          : (u.email.split('@')[0]?.replace(/\./g, ' ') ?? null);
+      byWallet.set(w.address.toLowerCase(), {
+        name: displayName,
+        email: u.email,
+        role: u.role as 'investor' | 'issuer' | 'admin',
+      });
+    }
+
+    return rows.map((r) => {
+      const match = byWallet.get(r.wallet.toLowerCase());
+      return {
+        wallet: r.wallet as `0x${string}`,
+        balance: r.balance.toString(),
+        percentOfTotal: Number(r.percentOfTotal),
+        lastUpdatedBlock: r.lastUpdatedBlock.toString(),
+        holderName: match?.name ?? null,
+        holderEmail: match?.email ?? null,
+        holderRole: match?.role ?? null,
+      };
+    });
   },
 };

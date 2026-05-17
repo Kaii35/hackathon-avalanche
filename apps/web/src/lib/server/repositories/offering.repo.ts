@@ -24,7 +24,7 @@ export const offeringRepo = {
       prisma.offering.count({ where }),
       prisma.offering.findMany({
         where,
-        include: { issuer: { select: { name: true } } },
+        include: { issuer: { select: { name: true, kycIssuerAddress: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (params.page - 1) * params.pageSize,
         take: params.pageSize,

@@ -24,19 +24,66 @@ import {
   WalletAddress,
 } from '@hack/ui';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Activity, Coins, ExternalLink, FileText, Pause, Settings, Users } from 'lucide-react';
+import {
+  Activity,
+  Coins,
+  ExternalLink,
+  FileText,
+  Pause,
+  Settings,
+  Users,
+  Vote,
+  Wallet,
+} from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
 import type { CapTableRowDto } from '@hack/shared';
 import { AreaTrend } from '@/components/charts/AreaTrend';
 import { AllocationDonut } from '@/components/charts/AllocationDonut';
+import { TradingChart } from '@/components/charts/TradingChart';
+import { generateDummyCandles, getHistoricalStartPrice } from '@/lib/client/dummyCandles';
 import { useCapTable, useOffering } from '@/lib/client/queries/offerings';
 import { EditOfferingSheet } from '@/components/issuer/EditOfferingSheet';
+import { useWallet } from '@/hooks/useWallet';
+import { useTokenHolding } from '@/hooks/useTokenHolding';
+import { useAllDividends } from '@/hooks/useDividends';
+import { useAllProposals } from '@/hooks/useGovernance';
+
+const ROLE_LABELS: Record<'investor' | 'issuer' | 'admin', string> = {
+  investor: 'Inversionista',
+  issuer: 'Emisor',
+  admin: 'Plataforma',
+};
 
 const capTableColumns: ColumnDef<CapTableRowDto>[] = [
   {
-    header: 'Wallet',
-    accessorKey: 'wallet',
-    cell: ({ row }) => <WalletAddress address={row.original.wallet} />,
+    header: 'Inversionista',
+    accessorKey: 'holderName',
+    cell: ({ row }) => {
+      const { holderName, holderEmail, holderRole, wallet } = row.original;
+      if (holderName || holderEmail) {
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-foreground">
+              {holderName ?? holderEmail ?? '—'}
+            </span>
+            <div className="flex items-center gap-2">
+              {holderRole && (
+                <Badge variant="outline" size="sm">
+                  {ROLE_LABELS[holderRole]}
+                </Badge>
+              )}
+              <WalletAddress address={wallet} className="text-2xs text-foreground-tertiary" />
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="flex flex-col">
+          <span className="text-sm italic text-foreground-tertiary">Wallet externa</span>
+          <WalletAddress address={wallet} className="text-2xs text-foreground-tertiary" />
+        </div>
+      );
+    },
   },
   {
     header: 'Balance',
@@ -115,17 +162,45 @@ export default function IssuerOfferingPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const { data: offering } = useOffering(id);
   const { data: capTable, isLoading: capTableLoading } = useCapTable(id);
+  const { address } = useWallet();
+  const ownerHolding = useTokenHolding(
+    (offering?.tokenAddress as `0x${string}` | null | undefined) ?? null,
+    address ?? null,
+  );
+  const { data: allDividends } = useAllDividends();
+  const { data: allProposals } = useAllProposals();
   const [editOpen, setEditOpen] = useState(false);
 
   if (!offering) return <Skeleton className="h-96 w-full" />;
 
+  const tokenAddrLower = (offering.tokenAddress ?? '').toLowerCase();
+  const myDividends = (allDividends ?? []).filter((d) => d.token.toLowerCase() === tokenAddrLower);
+  const myProposals = (allProposals ?? []).filter((p) => p.token.toLowerCase() === tokenAddrLower);
+  const totalDistributed = myDividends.reduce((acc, d) => acc + Number(d.totalAmount) / 1e6, 0);
+  const activeProposals = myProposals.filter((p) => p.status === 'Active').length;
+
+  // OHLC determinístico para el chart — mismo patrón que la vista investor.
+  // Si el símbolo tiene un precio histórico (re-priced), arrancamos ahí.
+  const startPrice = getHistoricalStartPrice(offering.symbol);
+  const candles = generateDummyCandles(id, offering.lastTradePrice, { startPrice });
+
+  const ownerBalanceNum =
+    ownerHolding.balance !== undefined && ownerHolding.decimals !== undefined
+      ? Number(ownerHolding.balance) / 10 ** ownerHolding.decimals
+      : 0;
+  const totalSupplyNum = Number(offering.totalSupply);
+  const ownerSharePct = totalSupplyNum > 0 ? (ownerBalanceNum / totalSupplyNum) * 100 : 0;
+
   const raised =
     (Number(offering.totalSupply) * Number(offering.pricePerUnit) * offering.fundedPct) / 100;
   const capRows = capTable ?? [];
-  const allocation = capRows.slice(0, 8).map((r) => ({
-    label: `${r.wallet.slice(0, 8)}…`,
-    value: Number(r.balance) * Number(offering.pricePerUnit),
-  }));
+  const allocation = capRows.slice(0, 8).map((r) => {
+    const labelBase = r.holderName ?? r.holderEmail ?? `${r.wallet.slice(0, 6)}…`;
+    return {
+      label: labelBase,
+      value: Number(r.balance) * Number(offering.pricePerUnit),
+    };
+  });
   const holderRows: HolderRow[] = capRows.map((c, i) => ({
     wallet: c.wallet,
     balance: c.balance,
@@ -209,17 +284,19 @@ export default function IssuerOfferingPage({ params }: { params: Promise<{ id: s
         {/* OVERVIEW */}
         <TabsContent value="overview">
           <div className="grid gap-6 lg:grid-cols-3">
-            <ChartCard title="Precio · 30 días" helper="USDC" className="lg:col-span-2">
-              <AreaTrend
-                data={offering.pricingHistory.map((p) => ({ ts: p.ts, value: p.price }))}
-                color={offering.thumbnailColor}
-                yLabel="Precio"
-              />
+            {/* Trading chart — línea con gradiente, mismo patrón que la vista investor */}
+            <ChartCard
+              title="Precio histórico"
+              helper="Lectura on-chain · USDC por share"
+              className="lg:col-span-2"
+              bodyClassName="px-0 pb-0 pt-2"
+            >
+              <TradingChart data={candles} symbol={offering.symbol} height={340} />
             </ChartCard>
 
             <Card>
               <CardHeader>
-                <CardTitle>Fondeo</CardTitle>
+                <CardTitle>Fondeo de la oferta</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Progress value={offering.fundedPct} />
@@ -246,10 +323,66 @@ export default function IssuerOfferingPage({ params }: { params: Promise<{ id: s
                       value: new Date(offering.lockupUntil).toLocaleDateString('es-MX'),
                     },
                     { label: 'Max holders', value: offering.maxHolders.toLocaleString('es-MX') },
+                    {
+                      label: 'Rendimiento anual esperado',
+                      value: (
+                        <span className="font-semibold text-success-fg">
+                          {(offering.expectedAnnualReturn ?? 0).toFixed(1)}%
+                        </span>
+                      ),
+                    },
                   ]}
                 />
               </CardContent>
             </Card>
+          </div>
+
+          {/* Owner-specific dashboard: posición del issuer + dividendos + governance */}
+          <div className="mt-6 grid gap-6 lg:grid-cols-4">
+            <StatCard
+              label="Mi posición"
+              value={
+                ownerHolding.isLoading
+                  ? '—'
+                  : `${ownerBalanceNum.toLocaleString('es-MX', {
+                      maximumFractionDigits: 2,
+                    })} ${offering.symbol}`
+              }
+              helper={
+                ownerBalanceNum > 0
+                  ? `${ownerSharePct.toFixed(2)}% del supply`
+                  : 'No tienes shares de esta oferta'
+              }
+              icon={<Wallet className="h-4 w-4" />}
+            />
+            <StatCard
+              label="Dividendos declarados"
+              value={myDividends.length.toString()}
+              helper={
+                totalDistributed > 0
+                  ? `$${totalDistributed.toLocaleString('es-MX', {
+                      maximumFractionDigits: 2,
+                    })} USDC distribuidos`
+                  : 'Ningún dividendo todavía'
+              }
+              icon={<Coins className="h-4 w-4" />}
+            />
+            <StatCard
+              label="Propuestas creadas"
+              value={myProposals.length.toString()}
+              helper={
+                activeProposals > 0
+                  ? `${activeProposals} activa${activeProposals === 1 ? '' : 's'} ahora`
+                  : 'Ninguna activa'
+              }
+              icon={<Vote className="h-4 w-4" />}
+            />
+            <StatCard
+              label="Holders únicos"
+              value={(capRows.length || offering.holders).toLocaleString('es-MX')}
+              helper={`Hasta ${offering.maxHolders.toLocaleString('es-MX')} por compliance`}
+              icon={<Users className="h-4 w-4" />}
+            />
           </div>
         </TabsContent>
 

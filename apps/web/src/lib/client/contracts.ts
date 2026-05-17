@@ -1,12 +1,30 @@
 /**
  * Deployed contract addresses on Avalanche Fuji (chain 43113).
- * Read from NEXT_PUBLIC_* env vars — null when running SSR without env.
+ *
+ * Las direcciones se leen primero del entorno (NEXT_PUBLIC_*). Si por alguna
+ * razón el bundle no recibe la variable (e.g., Turbopack/Next 15 perdiendo
+ * vars inyectadas vía `dotenv-cli`, o cache stale del cliente), caemos al
+ * fallback hardcoded del deploy actual en Fuji.
+ *
+ * El fallback NO se usa en producción mainnet — solo refleja el deploy de
+ * testnet de demo. Cualquier red distinta a Fuji debe sobreescribir las vars
+ * vía .env y este módulo seguirá leyendo de ahí preferentemente.
  */
 
-function addr(key: string): `0x${string}` | null {
+const FUJI_FALLBACK = {
+  NEXT_PUBLIC_IDENTITY_REGISTRY: '0x8Ca947A8c9714548eCe376a879D6755048018A82',
+  NEXT_PUBLIC_COMPLIANCE_REGISTRY: '0x8Db4A89761b208Da299dB9f1979252093A56C45A',
+  NEXT_PUBLIC_TOKEN_FACTORY: '0x500B3F119E09fA4503f7fE8D5724Ca7776257956',
+  NEXT_PUBLIC_USDC: '0x31E5aA694baebF0420170bD9b132F9b5c4b38A83',
+  NEXT_PUBLIC_SETTLEMENT: '0x491BCC419E8Dd90d1783c234151c5B57A0Dc2A2A',
+  NEXT_PUBLIC_DIVIDEND_DISTRIBUTOR: '0x71dA4E2cbc181F7eE9936c7A8243566fDcAb93c6',
+  NEXT_PUBLIC_GOVERNANCE: '0xfd2619c9d7b36c32309e613065bc0fd4f71e5f6d',
+} as const satisfies Record<string, `0x${string}`>;
+
+function addr(key: keyof typeof FUJI_FALLBACK): `0x${string}` {
   const v = process.env[key];
-  if (!v || !v.startsWith('0x')) return null;
-  return v as `0x${string}`;
+  if (v && v.startsWith('0x')) return v as `0x${string}`;
+  return FUJI_FALLBACK[key];
 }
 
 export const CONTRACT_ADDRESSES = {

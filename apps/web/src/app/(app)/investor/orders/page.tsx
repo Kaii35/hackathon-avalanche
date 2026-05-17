@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Badge, EmptyState, PageHeader, Skeleton } from '@hack/ui';
 import { ListChecks, ExternalLink, X as XIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { ConnectWalletPrompt } from '@/components/wallet/ConnectWalletPrompt';
 import { FujiActivityTable } from '@/components/wallet/FujiActivityTable';
 import { useMyOrders, useCancelOrder } from '@/lib/client/queries/orderbook';
+import { useOfferings } from '@/lib/client/queries/offerings';
 
 // The /api/orders/mine endpoint includes the most recent settlement TX hash
 // on each order. We extend the DTO inline rather than import a type that
@@ -18,7 +20,14 @@ type OrderRow = ReturnType<typeof useMyOrders>['data'] extends (infer T)[] | und
 export default function MyOrdersPage() {
   const { address, realConnected } = useWallet();
   const { data: orders, isLoading } = useMyOrders(address ?? undefined, 'all');
+  const { data: offerings } = useOfferings();
   const cancel = useCancelOrder();
+
+  // Lookup rápido offeringId → { name, symbol } para mostrar a qué oferta
+  // pertenece cada orden sin hacer N requests extra.
+  const offeringsById = new Map(
+    (offerings ?? []).map((o) => [o.id, { name: o.name, symbol: o.symbol }]),
+  );
 
   if (!realConnected || !address) {
     return (
@@ -75,20 +84,42 @@ export default function MyOrdersPage() {
             <table className="w-full text-sm">
               <thead className="bg-elevated/40">
                 <tr className="border-b border-border-subtle text-2xs uppercase tracking-wider text-foreground-tertiary">
+                  <th className="px-4 py-2.5 text-left">Oferta</th>
                   <th className="px-4 py-2.5 text-left">Lado</th>
                   <th className="px-4 py-2.5 text-right">Cantidad</th>
                   <th className="px-4 py-2.5 text-right">Precio</th>
                   <th className="px-4 py-2.5 text-right">Fill</th>
                   <th className="px-4 py-2.5 text-left">Estado</th>
                   <th className="px-4 py-2.5 text-left">Order hash</th>
-                  <th className="px-4 py-2.5 text-right">Acción</th>
+                  <th className="px-4 py-2.5 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((o) => {
                   const canCancel = o.status === 'open' || o.status === 'partial';
+                  const offering = offeringsById.get(o.offeringId);
                   return (
                     <tr key={o.id} className="border-b border-border-subtle last:border-0">
+                      <td className="px-4 py-2.5">
+                        {offering ? (
+                          <Link
+                            href={`/investor/offerings/${o.offeringId}`}
+                            className="group flex items-center gap-2"
+                            title={offering.name}
+                          >
+                            <span className="text-sm font-medium text-foreground group-hover:text-brand-400">
+                              {offering.name}
+                            </span>
+                            <Badge variant="outline" size="sm">
+                              {offering.symbol}
+                            </Badge>
+                          </Link>
+                        ) : (
+                          <span className="font-mono text-2xs text-foreground-tertiary">
+                            {o.offeringId.slice(0, 8)}…
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5">
                         <Badge variant={o.side === 'buy' ? 'success' : 'danger'} size="sm">
                           {o.side === 'buy' ? 'Compra' : 'Venta'}

@@ -202,7 +202,9 @@ async function main() {
       description:
         'Granja solar de 12 MW en Sonora con PPA a 15 años con CFE. EBITDA proyectado de USD 2.4M anuales.',
       totalSupply: '250000',
-      pricePerUnit: '210.75',
+      // Re-priced — ajuste tras revaluación de PPAs en el demo (de 210.75 a 42.50).
+      // Mantenerlo bajo $50 hace que el chart muestre la caída con `getHistoricalStartPrice`.
+      pricePerUnit: '42.50',
       maxHolders: 300,
     },
     {
