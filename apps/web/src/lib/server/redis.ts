@@ -4,42 +4,54 @@ const globalForRedis = globalThis as unknown as { redis?: Redis };
 
 /**
  * No-op Proxy stub used when REDIS_URL is not configured (typical Vercel
- * preview / first deploy). Satisfies the ioredis surface enough for our
- * callers — every command resolves to `null`, every event listener call
- * returns the stub itself for chaining. Zero TCP attempts, zero ECONNREFUSED
- * spam in build logs.
+ * preview / first deploy). The stub is universally chainable AND awaitable:
  *
- * Trade-off: rate-limiting / orderbook caching silently degrade (always a
- * cache miss, no rate enforcement) — but the app still serves requests.
- * Set REDIS_URL to enable the real client.
+ *   await redis.get('k')                 → null
+ *   redis.multi().incr('k').exec()       → no throw, awaits to null
+ *   redis.on('error', cb)                → registered as no-op
+ *   redis.pipeline().setex(...).exec()   → no throw
+ *
+ * The trick: target the Proxy on a callable (function), so `apply` works for
+ * `stub()`-style calls AND `get` works for `stub.method` access. The `then`
+ * key resolves to null on await. Every other access returns a fresh stub —
+ * which is itself callable, awaitable, and chainable. Covers ioredis +
+ * pipeline + BullMQ duck-typing without touching the network.
+ *
+ * Trade-off: rate-limiting and orderbook caching silently degrade (rate
+ * never enforced, every read is a cache miss). The app still serves
+ * requests correctly. Set REDIS_URL to enable a real client.
  */
 function createNoopStub(): Redis {
-  const stub: unknown = new Proxy(
-    {},
-    {
-      get(_target, prop) {
-        if (prop === 'then') return undefined; // not a thenable
-        // Event-emitter chain methods return the stub for fluency.
-        if (
-          prop === 'on' ||
-          prop === 'once' ||
-          prop === 'off' ||
-          prop === 'addListener' ||
-          prop === 'removeListener' ||
-          prop === 'emit'
-        ) {
-          return () => stub;
+  const makeStub = (): unknown => {
+    // Callable target → apply trap intercepts `stub()` invocations.
+    const target = function noop() {} as unknown as object;
+    return new Proxy(target, {
+      get(_t, prop) {
+        // Thenable: `await stub` resolves to null.
+        if (prop === 'then') {
+          return (onResolve: (value: unknown) => unknown) => onResolve(null);
         }
-        // disconnect / quit are sync void calls in some ioredis versions.
+        // Symbols (iterators, toPrimitive, etc.) — return undefined so the
+        // runtime falls back to defaults instead of treating the stub as
+        // iterable when it isn't.
+        if (typeof prop === 'symbol') return undefined;
+        // Sync-void operations some callers expect to return immediately.
         if (prop === 'disconnect' || prop === 'quit' || prop === 'end') {
           return () => Promise.resolve('OK');
         }
-        // Every other access is assumed to be a Redis command — resolves null.
-        return () => Promise.resolve(null);
+        // Any other property access returns a fresh stub (also callable +
+        // awaitable + chainable). That covers `redis.get`, `redis.multi`,
+        // `redis.on`, pipeline chains, etc.
+        return makeStub();
       },
-    },
-  );
-  return stub as Redis;
+      apply() {
+        // Calling the stub returns another stub — so `redis.multi().incr(k)`
+        // works because `.multi()` returns a stub which itself has `.incr`.
+        return makeStub();
+      },
+    });
+  };
+  return makeStub() as Redis;
 }
 
 function createRedis(): Redis {
