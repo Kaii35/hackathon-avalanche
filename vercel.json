@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm --filter @hack/database run db:generate:ci && pnpm --filter @hack/web run build:ci",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "apps/web/.next",
+  "//": "Path is relative to the Vercel project's Root Directory (apps/web). Setting 'apps/web/.next' here caused Vercel to look for apps/web/apps/web/.next and fail.",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
   "github": {
