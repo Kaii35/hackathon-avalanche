@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>ARCA · Roadmap 2026 – 2027</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --brand: #2a5bff;
+        --brand-light: #5c82ff;
+        --brand-dark: #1740cc;
+        --brand-deep: #0a1e6b;
+
+        /* Phase palette — gives the doc rhythm + chromatic story */
+        --phase-1: #10b981; /* emerald — DONE */
+        --phase-1-bg: rgba(16, 185, 129, 0.1);
+        --phase-2: #2a5bff; /* brand blue — NOW */
+        --phase-2-bg: rgba(42, 91, 255, 0.1);
+        --phase-3: #8b5cf6; /* violet — NEXT */
+        --phase-3-bg: rgba(139, 92, 246, 0.1);
+        --phase-4: #f59e0b; /* amber — FUTURE */
+        --phase-4-bg: rgba(245, 158, 11, 0.1);
+
+        --canvas: #fafbfc;
+        --surface: #ffffff;
+        --ink: #0a0f1f;
+        --ink-soft: #1e293b;
+        --muted: #475569;
+        --muted-soft: #64748b;
+        --border: #e2e8f0;
+        --border-soft: #eef1f5;
+        --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.04);
+        --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -8px rgba(15, 23, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+        font-size: 11pt;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page { size: A4; margin: 14mm 14mm; }
+
+      .page { padding: 0; }
+      .cover { page-break-after: always; break-after: page; }
+      .pagebreak { page-break-before: always; break-before: page; }
+
+      .keep,
+      .phase-card,
+      .delivery-grid,
+      .delivery,
+      .timeline-overview,
+      .stat-grid,
+      .stat,
+      .quote,
+      .swing,
+      .need-card,
+      .section-head,
+      .phase-header {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      h3, h4 {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      /* ============================================================
+         COVER
+      ============================================================ */
+      .cover {
+        position: relative;
+        min-height: 260mm; max-height: 268mm;
+        padding: 22mm 18mm 16mm;
+        background:
+          radial-gradient(ellipse 60% 50% at 85% 0%, rgba(245, 158, 11, 0.18) 0%, transparent 50%),
+          radial-gradient(ellipse 70% 60% at 0% 100%, rgba(139, 92, 246, 0.25) 0%, transparent 55%),
+          radial-gradient(ellipse 80% 50% at 50% 50%, rgba(42, 91, 255, 0.35) 0%, transparent 60%),
+          linear-gradient(135deg, #050a1f 0%, #0b1b4d 60%, #1d2a8c 100%);
+        color: #fff;
+        display: flex; flex-direction: column; justify-content: space-between;
+        overflow: hidden;
+      }
+      .cover::before {
+        content: '';
+        position: absolute; inset: 0;
+        background:
+          repeating-linear-gradient(
+            90deg,
+            transparent 0,
+            transparent 80px,
+            rgba(255, 255, 255, 0.025) 80px,
+            rgba(255, 255, 255, 0.025) 81px
+          );
+        pointer-events: none;
+      }
+      .cover-top {
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 9pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        color: rgba(255, 255, 255, 0.6);
+        position: relative; z-index: 2;
+      }
+      .cover-top .arca-mark {
+        font-weight: 800;
+        letter-spacing: 0.22em;
+        color: #fff;
+        font-size: 11pt;
+      }
+      .cover-main {
+        position: relative; z-index: 2;
+        margin-top: 6mm;
+      }
+      .cover-tag {
+        display: inline-block;
+        font-size: 8.5pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.24em;
+        color: #fcd34d;
+        margin-bottom: 8mm;
+      }
+      .cover-tag::before {
+        content: '◆';
+        margin-right: 4mm;
+        opacity: 0.7;
+      }
+      .cover-title {
+        font-size: 86pt;
+        font-weight: 900;
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        margin: 0;
+        background: linear-gradient(180deg, #fff 0%, #c7d2fe 70%, #818cf8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .cover-years {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 26pt;
+        font-weight: 700;
+        margin-top: 4mm;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.55);
+        display: flex; align-items: center; gap: 4mm;
+      }
+      .cover-years span.dash {
+        flex: 1;
+        max-width: 50mm;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), transparent);
+        display: inline-block;
+      }
+      .cover-vision {
+        margin-top: 14mm;
+        font-size: 16pt;
+        font-weight: 500;
+        line-height: 1.4;
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 145mm;
+        letter-spacing: -0.005em;
+      }
+      .cover-vision em {
+        background: linear-gradient(90deg, #fcd34d, #fb923c);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-style: normal;
+        font-weight: 700;
+      }
+      .cover-foot {
+        position: relative; z-index: 2;
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-top: 12mm;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        padding-top: 6mm;
+        font-size: 9pt;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.04em;
+      }
+      .cover-foot strong { color: #fff; font-weight: 600; }
+
+      /* ============================================================
+         SECTION HEADS
+      ============================================================ */
+      .section-head {
+        padding: 4mm 0 4mm;
+        margin: 0 0 6mm;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head:not(.cover + .page .section-head) { margin-top: 0; }
+      .section-head .num {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8.5pt;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        color: var(--brand);
+        text-transform: uppercase;
+        margin-bottom: 3mm;
+      }
+      .section-head h2 {
+        font-size: 24pt;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        margin: 0 0 3mm;
+        color: var(--ink);
+      }
+      .section-head .lede {
+        font-size: 12pt;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 170mm;
+        margin: 0;
+      }
+
+      /* ============================================================
+         VISION / WHERE WE ARE
+      ============================================================ */
+      .hero-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4mm;
+        margin: 6mm 0 4mm;
+      }
+      .hero-stat {
+        border: 1px solid var(--border);
+        border-radius: 4mm;
+        padding: 5mm 5mm 4mm;
+        background: var(--surface);
+        box-shadow: var(--shadow-soft);
+      }
+      .hero-stat .n {
+        font-size: 26pt;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero-stat .l {
+        margin-top: 2mm;
+        font-size: 9pt;
+        font-weight: 500;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .quote {
+        margin: 6mm 0;
+        padding: 5mm 6mm;
+        border-left: 3pt solid var(--brand);
+        background: linear-gradient(90deg, rgba(42, 91, 255, 0.04) 0%, rgba(42, 91, 255, 0) 100%);
+        font-size: 11pt;
+        color: var(--ink-soft);
+        line-height: 1.55;
+        border-radius: 0 2mm 2mm 0;
+      }
+
+      h3 {
+        font-size: 15pt;
+        font-weight: 700;
+        margin: 8mm 0 3mm;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      p { margin: 0 0 3mm; color: var(--ink-soft); }
+      strong { color: var(--ink); font-weight: 600; }
+
+      /* ============================================================
+         TIMELINE OVERVIEW (the hero visual)
+      ============================================================ */
+      .timeline-overview {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 5mm;
+        padding: 7mm 7mm 6mm;
+        margin: 4mm 0 6mm;
+        box-shadow: var(--shadow-card);
+      }
+      .timeline-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2mm;
+        margin: 4mm 0 6mm;
+      }
+      .tl-phase {
+        position: relative;
+        border-radius: 3mm;
+        padding: 4mm 4mm 4mm;
+        color: #fff;
+        overflow: hidden;
+      }
+      .tl-phase.p1 { background: linear-gradient(135deg, #059669, #10b981); }
+      .tl-phase.p2 { background: linear-gradient(135deg, #1740cc, #2a5bff); box-shadow: 0 0 0 2px rgba(42, 91, 255, 0.2), 0 8px 20px -4px rgba(42, 91, 255, 0.35); }
+      .tl-phase.p3 { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+      .tl-phase.p4 { background: linear-gradient(135deg, #d97706, #f59e0b); }
+      .tl-phase .pnum {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8pt;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        opacity: 0.7;
+        margin-bottom: 2mm;
+      }
+      .tl-phase .pname {
+        font-size: 12pt;
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        margin: 0 0 2mm;
+      }
+      .tl-phase .pquarter {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8pt;
+        font-weight: 500;
+        opacity: 0.85;
+      }
+      .tl-phase .pstatus {
+        margin-top: 3mm;
+        font-size: 7.5pt;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        padding: 1mm 2.5mm;
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 1.5mm;
+        display: inline-block;
+      }
+
+      .timeline-axis {
+        position: relative;
+        height: 2px;
+        background: linear-gradient(90deg, var(--phase-1) 0%, var(--phase-2) 33%, var(--phase-3) 66%, var(--phase-4) 100%);
+        margin: 0 4mm 6mm;
+      }
+      .timeline-axis::before,
+      .timeline-axis::after {
+        content: '';
+        position: absolute;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        top: -3px;
+      }
+      .timeline-axis::before { left: -4px; background: var(--phase-1); }
+      .timeline-axis::after { right: -4px; background: var(--phase-4); }
+
+      .timeline-milestones {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2mm;
+        font-size: 9pt;
+        color: var(--muted);
+      }
+      .timeline-milestones .col {
+        padding: 0 1mm;
+      }
+      .timeline-milestones .col .h {
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 2mm;
+        padding-left: 3mm;
+        position: relative;
+      }
+      .timeline-milestones .col .h::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 50%;
+        transform: translateY(-50%);
+        width: 6px; height: 6px;
+        border-radius: 50%;
+      }
+      .timeline-milestones .col.c1 .h::before { background: var(--phase-1); }
+      .timeline-milestones .col.c2 .h::before { background: var(--phase-2); }
+      .timeline-milestones .col.c3 .h::before { background: var(--phase-3); }
+      .timeline-milestones .col.c4 .h::before { background: var(--phase-4); }
+      .timeline-milestones .col ul {
+        margin: 0; padding: 0; list-style: none;
+      }
+      .timeline-milestones .col li {
+        font-size: 8.5pt;
+        line-height: 1.4;
+        color: var(--muted);
+        padding-left: 3mm;
+        position: relative;
+        margin-bottom: 1mm;
+      }
+      .timeline-milestones .col li::before {
+        content: '·';
+        position: absolute;
+        left: 0;
+        color: var(--muted-soft);
+        font-weight: 700;
+      }
+
+      /* ============================================================
+         PHASE DETAIL PAGES
+      ============================================================ */
+      .phase-header {
+        position: relative;
+        margin: 0 0 8mm;
+        padding: 8mm 7mm;
+        border-radius: 5mm;
+        overflow: hidden;
+        color: #fff;
+      }
+      .phase-header.p1 { background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%); }
+      .phase-header.p2 { background: linear-gradient(135deg, #0a1e6b 0%, #1740cc 50%, #2a5bff 100%); }
+      .phase-header.p3 { background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #8b5cf6 100%); }
+      .phase-header.p4 { background: linear-gradient(135deg, #78350f 0%, #d97706 50%, #f59e0b 100%); }
+      .phase-header::after {
+        content: '';
+        position: absolute;
+        right: -20mm; top: -30mm;
+        width: 80mm; height: 80mm;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        pointer-events: none;
+      }
+      .phase-header-row {
+        display: flex; align-items: flex-end;
+        gap: 6mm;
+        margin-bottom: 4mm;
+        position: relative; z-index: 2;
+      }
+      .phase-bignum {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 56pt;
+        font-weight: 800;
+        line-height: 0.85;
+        letter-spacing: -0.04em;
+        color: rgba(255, 255, 255, 0.95);
+      }
+      .phase-meta {
+        flex: 1;
+        padding-bottom: 2mm;
+      }
+      .phase-quarter {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9pt;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        color: rgba(255, 255, 255, 0.65);
+        margin-bottom: 2mm;
+      }
+      .phase-name {
+        font-size: 24pt;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .phase-status {
+        align-self: flex-end;
+        margin-bottom: 2mm;
+        font-size: 8.5pt;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 2mm 4mm;
+        background: rgba(255, 255, 255, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .phase-goal {
+        position: relative; z-index: 2;
+        font-size: 13pt;
+        line-height: 1.45;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.92);
+        max-width: 150mm;
+        font-weight: 500;
+      }
+      .phase-goal em {
+        background: rgba(255, 255, 255, 0.18);
+        padding: 0.5mm 1.5mm;
+        border-radius: 1mm;
+        font-style: normal;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      /* Deliverables grid */
+      .delivery-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3mm;
+      }
+      .delivery {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 3mm;
+        padding: 4mm 4mm 3mm;
+        font-size: 9.5pt;
+        line-height: 1.45;
+      }
+      .delivery .check {
+        display: inline-flex;
+        width: 5mm; height: 5mm;
+        border-radius: 50%;
+        align-items: center; justify-content: center;
+        font-size: 8pt;
+        font-weight: 700;
+        margin-right: 2mm;
+        vertical-align: middle;
+      }
+      .delivery.p1 .check { background: var(--phase-1-bg); color: var(--phase-1); }
+      .delivery.p2 .check { background: var(--phase-2-bg); color: var(--phase-2); }
+      .delivery.p3 .check { background: var(--phase-3-bg); color: var(--phase-3); }
+      .delivery.p4 .check { background: var(--phase-4-bg); color: var(--phase-4); }
+      .delivery h4 {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 0 1mm;
+        font-size: 10.5pt;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .delivery p {
+        margin: 1mm 0 0;
+        font-size: 9pt;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      /* North star metric callout */
+      .northstar {
+        margin-top: 6mm;
+        padding: 5mm 6mm;
+        border-radius: 4mm;
+        border: 1px dashed;
+        display: flex; align-items: center; gap: 5mm;
+      }
+      .northstar.p1 { border-color: var(--phase-1); background: var(--phase-1-bg); }
+      .northstar.p2 { border-color: var(--phase-2); background: var(--phase-2-bg); }
+      .northstar.p3 { border-color: var(--phase-3); background: var(--phase-3-bg); }
+      .northstar.p4 { border-color: var(--phase-4); background: var(--phase-4-bg); }
+      .northstar .icon {
+        font-size: 22pt;
+        line-height: 1;
+      }
+      .northstar.p1 .icon { color: var(--phase-1); }
+      .northstar.p2 .icon { color: var(--phase-2); }
+      .northstar.p3 .icon { color: var(--phase-3); }
+      .northstar.p4 .icon { color: var(--phase-4); }
+      .northstar .label {
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1mm;
+      }
+      .northstar .text {
+        font-size: 11.5pt;
+        font-weight: 600;
+        color: var(--ink);
+        line-height: 1.35;
+      }
+
+      /* ============================================================
+         BIG SWINGS / NEEDS
+      ============================================================ */
+      .swings-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4mm;
+        margin: 4mm 0;
+      }
+      .swing {
+        background: linear-gradient(135deg, #0a0f1f 0%, #1e293b 100%);
+        color: #fff;
+        border-radius: 4mm;
+        padding: 5mm 6mm 5mm;
+        position: relative; overflow: hidden;
+      }
+      .swing::before {
+        content: '◆';
+        position: absolute;
+        right: 4mm; top: 4mm;
+        font-size: 16pt;
+        color: rgba(252, 211, 77, 0.3);
+      }
+      .swing h4 {
+        margin: 0 0 2mm;
+        font-size: 12pt;
+        font-weight: 700;
+        color: #fcd34d;
+        letter-spacing: -0.01em;
+      }
+      .swing p {
+        margin: 0;
+        font-size: 9.5pt;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .needs-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 4mm;
+        margin-top: 4mm;
+      }
+      .need-card {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 4mm;
+        padding: 5mm 5mm 4mm;
+        box-shadow: var(--shadow-soft);
+      }
+      .need-card .ico {
+        width: 9mm; height: 9mm;
+        border-radius: 2mm;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14pt;
+        font-weight: 700;
+        margin-bottom: 3mm;
+      }
+      .need-card h4 {
+        margin: 0 0 2mm;
+        font-size: 12pt;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .need-card ul {
+        margin: 0; padding: 0; list-style: none;
+      }
+      .need-card li {
+        font-size: 9.5pt;
+        line-height: 1.5;
+        color: var(--ink-soft);
+        padding-left: 4mm;
+        position: relative;
+        margin-bottom: 1.5mm;
+      }
+      .need-card li::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: var(--brand);
+        font-weight: 700;
+      }
+      .need-card li strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* ============================================================
+         CLOSING CTA
+      ============================================================ */
+      .closing {
+        margin-top: 10mm;
+        padding: 12mm 10mm;
+        border-radius: 5mm;
+        text-align: center;
+        background:
+          radial-gradient(ellipse 60% 50% at 50% 100%, rgba(252, 211, 77, 0.25) 0%, transparent 60%),
+          radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139, 92, 246, 0.25) 0%, transparent 50%),
+          linear-gradient(135deg, #0a1e6b 0%, #1d2a8c 100%);
+        color: #fff;
+        position: relative; overflow: hidden;
+      }
+      .closing h3 {
+        margin: 0 0 3mm;
+        font-size: 22pt;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+      .closing h3 span {
+        background: linear-gradient(90deg, #fcd34d, #fb923c);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .closing p {
+        max-width: 140mm;
+        margin: 0 auto 6mm;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 11.5pt;
+        line-height: 1.55;
+      }
+      .closing .pill {
+        display: inline-block;
+        padding: 2.5mm 6mm;
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 10pt;
+        letter-spacing: 0.05em;
+      }
+
+      .small { font-size: 9pt; }
+      .muted { color: var(--muted); }
+      .center { text-align: center; }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+         COVER
+    ============================================================ -->
+    <section class="page cover">
+      <div class="cover-top">
+        <span class="arca-mark">ARCA</span>
+        <span>Roadmap · 2026 – 2027</span>
+      </div>
+
+      <div class="cover-main">
+        <div class="cover-tag">Estrategia y visión</div>
+        <h1 class="cover-title">ROAD<br />MAP</h1>
+        <div class="cover-years">
+          <span>2026</span>
+          <span class="dash"></span>
+          <span>2027</span>
+        </div>
+        <p class="cover-vision">
+          De primer secundario regulado en México a la
+          <em>infraestructura on-chain por defecto</em> para las IFCs de
+          Latinoamérica — en cuatro fases coordinadas, cero atajos
+          regulatorios.
+        </p>
+      </div>
+
+      <div class="cover-foot">
+        <span><strong>ARCA</strong> · Mercado Secundario Regulado</span>
+        <span>Confidencial · Documento estratégico</span>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         VISION / BASELINE
+    ============================================================ -->
+    <section class="page">
+      <div class="section-head">
+        <div class="num">00 · DÓNDE ESTAMOS HOY</div>
+        <h2>El producto ya vive on-chain. Ahora viene escalarlo.</h2>
+        <p class="lede">
+          Antes de hablar de los próximos pasos, conviene anclar lo que ya está
+          shipped y validado. Estos cuatro números son el punto de partida del
+          roadmap.
+        </p>
+      </div>
+
+      <div class="hero-stat-grid">
+        <div class="hero-stat">
+          <div class="n">5</div>
+          <div class="l">contratos ERC-3643 en Avalanche Fuji</div>
+        </div>
+        <div class="hero-stat">
+          <div class="n">141</div>
+          <div class="l">tests verdes en CI</div>
+        </div>
+        <div class="hero-stat">
+          <div class="n">100%</div>
+          <div class="l">flujo end-to-end funcional (issuer · investor · admin)</div>
+        </div>
+        <div class="hero-stat">
+          <div class="n">1</div>
+          <div class="l">trade real settleado atomicamente on-chain</div>
+        </div>
+      </div>
+
+      <div class="quote">
+        <strong>La base está construida.</strong> Identity registry, compliance
+        embebido, settlement atómico, KYC integrado, panel admin, audit log
+        inmutable. Todo lo de los próximos 18 meses se apoya en esto — no
+        empieza desde cero.
+      </div>
+
+      <h3>El roadmap en una frase</h3>
+      <p>
+        Pasar de <em>una plataforma técnicamente lista</em> a
+        <strong>la infraestructura sobre la que opera el mercado secundario
+        regulado de IFCs en LATAM</strong>. Cuatro fases, dos años, una sola
+        narrativa: compliance-native por diseño.
+      </p>
+
+      <!-- TIMELINE OVERVIEW -->
+      <div class="timeline-overview">
+        <h3 style="margin-top: 0; margin-bottom: 3mm;">Las cuatro fases</h3>
+        <p class="muted small" style="margin-bottom: 5mm;">
+          Cada fase es independiente y entregable; juntas componen la visión.
+          Los hitos están priorizados, no son una checklist rígida.
+        </p>
+
+        <div class="timeline-bar">
+          <div class="tl-phase p1">
+            <div class="pnum">FASE 01</div>
+            <div class="pname">Foundation</div>
+            <div class="pquarter">Q4 2025 → Q1 2026</div>
+            <div class="pstatus">Done</div>
+          </div>
+          <div class="tl-phase p2">
+            <div class="pnum">FASE 02</div>
+            <div class="pname">Pilot Launch</div>
+            <div class="pquarter">Q1 → Q2 2026</div>
+            <div class="pstatus">Now</div>
+          </div>
+          <div class="tl-phase p3">
+            <div class="pnum">FASE 03</div>
+            <div class="pname">Production</div>
+            <div class="pquarter">Q3 2026 → Q1 2027</div>
+            <div class="pstatus">Next</div>
+          </div>
+          <div class="tl-phase p4">
+            <div class="pnum">FASE 04</div>
+            <div class="pname">Market Expansion</div>
+            <div class="pquarter">Q2 2027 →</div>
+            <div class="pstatus">Future</div>
+          </div>
+        </div>
+
+        <div class="timeline-axis"></div>
+
+        <div class="timeline-milestones">
+          <div class="col c1">
+            <div class="h">Ya entregado</div>
+            <ul>
+              <li>Contratos en Fuji</li>
+              <li>KYC Sumsub integrado</li>
+              <li>SIWE wallet linking</li>
+              <li>Admin pre-registration</li>
+            </ul>
+          </div>
+          <div class="col c2">
+            <div class="h">Próximas 12 semanas</div>
+            <ul>
+              <li>Deploy a Vercel + dominio</li>
+              <li>Primer offering real Arkangeles</li>
+              <li>Sumsub producción</li>
+              <li>Notificaciones email</li>
+            </ul>
+          </div>
+          <div class="col c3">
+            <div class="h">6 – 9 meses</div>
+            <ul>
+              <li>Mainnet C-chain</li>
+              <li>Multi-IFC white-label</li>
+              <li>API pública</li>
+              <li>Mobile trading UI</li>
+            </ul>
+          </div>
+          <div class="col c4">
+            <div class="h">12 – 24 meses</div>
+            <ul>
+              <li>Subnet Avalanche propia</li>
+              <li>Dark pool institucional</li>
+              <li>Expansión regional LATAM</li>
+              <li>Custodian integrations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PHASE 1 — FOUNDATION
+    ============================================================ -->
+    <section class="page pagebreak">
+      <div class="phase-header p1">
+        <div class="phase-header-row">
+          <div class="phase-bignum">01</div>
+          <div class="phase-meta">
+            <div class="phase-quarter">Q4 2025 → Q1 2026</div>
+            <h2 class="phase-name">Foundation</h2>
+          </div>
+          <span class="phase-status">✓ Done</span>
+        </div>
+        <p class="phase-goal">
+          Probar la tesis con producto técnico end-to-end:
+          <em>compliance-native</em>, contratos en testnet, flujo completo
+          desde KYC hasta settlement.
+        </p>
+      </div>
+
+      <h3>Lo que entregamos</h3>
+      <div class="delivery-grid">
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>Contratos ERC-3643</h4>
+          <p>IdentityRegistry, ComplianceManager, SecurityToken, TokenFactory, Settlement, MockUSDC desplegados y verificados en Avalanche Fuji.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>Trade real on-chain</h4>
+          <p>Primera orden EIP-712 firmada, matcheada y settleada atomicamente contra stablecoin. Cap table viva en cadena.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>KYC end-to-end</h4>
+          <p>Integración Sumsub (sandbox), webhook HMAC, registro automático en IdentityRegistry on-chain al aprobarse.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>Tres portales en producción</h4>
+          <p>Investor, Issuer y Compliance Admin — diseñados, integrados con sesión JWT y permisos por rol.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>SIWE wallet linking real</h4>
+          <p>Vinculación de wallet con firma EIP-712, validación de freshness y dirección recovery vía viem.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>Admin pre-registration</h4>
+          <p>Sistema de invitaciones de admin con cookie de sesión + UI dedicada. Cero admins sin invitación previa.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>Marca + identidad visual</h4>
+          <p>Rename completo a ARCA, paleta brand-aligned, welcome splash con dots + gradient wave, landing redesigned.</p>
+        </div>
+        <div class="delivery p1">
+          <span class="check">✓</span><h4>Pitch para Arkangeles</h4>
+          <p>Documento de marco normativo y propuesta de valor terminado y listo para presentar al board.</p>
+        </div>
+      </div>
+
+      <div class="northstar p1">
+        <div class="icon">★</div>
+        <div>
+          <div class="label">North star alcanzada</div>
+          <div class="text">Producto técnico end-to-end funcional en testnet, listo para piloto real.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PHASE 2 — PILOT LAUNCH
+    ============================================================ -->
+    <section class="page pagebreak">
+      <div class="phase-header p2">
+        <div class="phase-header-row">
+          <div class="phase-bignum">02</div>
+          <div class="phase-meta">
+            <div class="phase-quarter">Q1 → Q2 2026</div>
+            <h2 class="phase-name">Pilot Launch</h2>
+          </div>
+          <span class="phase-status">● Now</span>
+        </div>
+        <p class="phase-goal">
+          Lanzar la primera oferta real con Arkangeles en producción:
+          <em>50 inversionistas verificados</em> operando sobre un token con
+          compliance CNBV embebido.
+        </p>
+      </div>
+
+      <h3>Lo que vamos a entregar</h3>
+      <div class="delivery-grid">
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Vercel production deploy</h4>
+          <p>Infraestructura productiva con preview branches, edge cache, monitoreo y alertas. Dominio: arca.mx.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Sumsub producción</h4>
+          <p>Migración del sandbox al ambiente productivo de Sumsub, incluyendo flujos KYB para personas morales.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Pinata · IPFS para prospectos</h4>
+          <p>Almacenamiento descentralizado para los prospectos de oferta. CID inmutable verificable on-chain.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Notificaciones email + in-app</h4>
+          <p>Resend + Postmark para confirmaciones de orden, KYC aprobado, dividend distributed y alertas regulatorias.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Forced transfer + freeze UI</h4>
+          <p>Pantallas completas con flujo de aprobación de oficial de cumplimiento, motivo regulatorio y audit trail.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Reportes UIF exportables</h4>
+          <p>Generación del XML estructurado para reporte de operaciones ≥ 210 UMA, listo para subir a portal UIF.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Dividend distribution UI</h4>
+          <p>Panel de emisor para distribuir dividendos USDC pro-rata a holders. Claim self-service para inversionistas.</p>
+        </div>
+        <div class="delivery p2">
+          <span class="check">→</span><h4>Pilot offering Arkangeles</h4>
+          <p>Primera oferta tokenizada real, con universo controlado de inversionistas calificados y monitoreo cercano.</p>
+        </div>
+      </div>
+
+      <div class="northstar p2">
+        <div class="icon">▲</div>
+        <div>
+          <div class="label">North star</div>
+          <div class="text">1 oferta real, 50 inversionistas verificados, 10+ trades secundarios atómicos en producción.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PHASE 3 — PRODUCTION MATURITY
+    ============================================================ -->
+    <section class="page pagebreak">
+      <div class="phase-header p3">
+        <div class="phase-header-row">
+          <div class="phase-bignum">03</div>
+          <div class="phase-meta">
+            <div class="phase-quarter">Q3 2026 → Q1 2027</div>
+            <h2 class="phase-name">Production Maturity</h2>
+          </div>
+          <span class="phase-status">◆ Next</span>
+        </div>
+        <p class="phase-goal">
+          De una IFC a cinco. <em>$5M tokenizados</em>, 500 inversionistas
+          activos, mainnet Avalanche y arquitectura multi-tenant lista para
+          escalar sin tocar código.
+        </p>
+      </div>
+
+      <h3>Lo que viene</h3>
+      <div class="delivery-grid">
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Mainnet C-chain</h4>
+          <p>Migración de Fuji a Avalanche C-chain mainnet con auditoría previa por Trail of Bits o Spearbit.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Claim Issuer real</h4>
+          <p>Sustitución del deployer mock por infraestructura de claim issuer institucional con multi-sig y key management.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Multi-IFC white-label</h4>
+          <p>Onboarding self-service para nuevas IFCs: subdominio, branding, configuración legal, deploy de contratos.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Whitelisting dinámico</h4>
+          <p>Reglas de jurisdicción y acreditación configurables por oferta, sin redeploy del contrato. Versionado on-chain.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Compliance multi-tenant</h4>
+          <p>Console del oficial de cumplimiento con vista cross-IFC, alertas centralizadas y delegación de roles.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>API pública + webhooks</h4>
+          <p>REST + GraphQL para fintechs que quieran integrar: lectura de cap tables, orderbook, notificaciones de eventos.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Mobile-first trading</h4>
+          <p>Rediseño responsive del módulo de trading + portfolio para que un inversionista opere desde el celular.</p>
+        </div>
+        <div class="delivery p3">
+          <span class="check">▶</span><h4>Indexer productivo</h4>
+          <p>Indexer en Railway/Render con redundancia, replay de eventos, cold storage de históricos y SLA monitoreado.</p>
+        </div>
+      </div>
+
+      <div class="northstar p3">
+        <div class="icon">◆</div>
+        <div>
+          <div class="label">North star</div>
+          <div class="text">5 IFCs onboardeadas · $5M USDC equivalente tokenizados · 500 inversionistas activos.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PHASE 4 — MARKET EXPANSION
+    ============================================================ -->
+    <section class="page pagebreak">
+      <div class="phase-header p4">
+        <div class="phase-header-row">
+          <div class="phase-bignum">04</div>
+          <div class="phase-meta">
+            <div class="phase-quarter">Q2 2027 →</div>
+            <h2 class="phase-name">Market Expansion</h2>
+          </div>
+          <span class="phase-status">◯ Future</span>
+        </div>
+        <p class="phase-goal">
+          Ser <em>la infraestructura de secundarios regulados</em> en LATAM:
+          subnet propia, dark pool institucional, integraciones con custodios
+          y expansión a 3 países.
+        </p>
+      </div>
+
+      <h3>La visión a 24 meses</h3>
+      <div class="delivery-grid">
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>Subnet Avalanche propia</h4>
+          <p>L1 dedicada para ARCA: validators institucionales, gas predecible, governance pre-aprobado por reguladores.</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>Dark pool institucional</h4>
+          <p>Order matching off-book para tickets ≥ $1M con anonimato pre-trade y settlement on-chain post-match.</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>Custodian integrations</h4>
+          <p>Conectividad con custodios CNBV-aprobados para inversionistas institucionales (Banorte, BBVA, Banamex).</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>AML monitoring con AI</h4>
+          <p>Detección de patrones anómalos (estructuración, layering) con modelos ML, no solo umbrales fijos.</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>Expansión regional</h4>
+          <p>Brasil (CVM), Argentina (CNV), Colombia (Superfinanciera) — mismo stack, adaptadores regulatorios por país.</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>Cross-chain bridges</h4>
+          <p>Interoperabilidad con Ethereum L2s (Base, Polygon) para acceder a inversionistas institucionales cripto-nativos.</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>DAO governance gradual</h4>
+          <p>Migración progresiva de decisiones de protocolo (fees, módulos compliance) a governance de stakeholders.</p>
+        </div>
+        <div class="delivery p4">
+          <span class="check">◇</span><h4>Secondary derivatives</h4>
+          <p>Forwards y opciones sobre participaciones IFC para hedging institucional — convirtiendo ARCA en infrastructure layer.</p>
+        </div>
+      </div>
+
+      <div class="northstar p4">
+        <div class="icon">∞</div>
+        <div>
+          <div class="label">North star</div>
+          <div class="text">$100M tokenizados · 25 IFCs · presencia en 3 países LATAM · referente regional de secundarios regulados.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         BIG SWINGS
+    ============================================================ -->
+    <section class="page pagebreak">
+      <div class="section-head">
+        <div class="num">05 · APUESTAS GRANDES</div>
+        <h2>Las bets opcionales que pueden cambiar el techo.</h2>
+        <p class="lede">
+          No están en el camino crítico, pero si conseguimos partner correcto
+          o capital suficiente, cualquiera de estas redefine el tamaño del
+          mercado al que podemos llegar.
+        </p>
+      </div>
+
+      <div class="swings-grid">
+        <div class="swing">
+          <h4>Tokenización de CAPEX corporativo</h4>
+          <p>
+            No solo equity startup. Tokenizar proyectos de inversión específicos
+            (real estate productivo, infraestructura, energía) abre un mercado
+            varios órdenes de magnitud más grande que crowdfunding tradicional.
+          </p>
+        </div>
+        <div class="swing">
+          <h4>Stablecoin propia colateralizada</h4>
+          <p>
+            Una stablecoin MXN colateralizada con tokens IFC verificados puede
+            convertirse en el "medio de cambio" del ecosistema. Carry trade
+            interno + monetización vía spread y yield.
+          </p>
+        </div>
+        <div class="swing">
+          <h4>Integración con CME / brokers tradicionales</h4>
+          <p>
+            Wrapping de participaciones tokenizadas como ETF o derivativo
+            cotizable. Una IFC accede a flujo de capital institucional global
+            sin abandonar su jurisdicción regulatoria.
+          </p>
+        </div>
+        <div class="swing">
+          <h4>Compliance-as-a-Service</h4>
+          <p>
+            Vender el stack de identidad + monitoreo a otras plataformas
+            fintech mexicanas (no solo IFCs). Casi cualquier actividad
+            vulnerable bajo LFPIORPI lo necesita.
+          </p>
+        </div>
+      </div>
+
+      <div class="quote" style="margin-top: 6mm;">
+        <strong>Criterio de evaluación:</strong> cada apuesta se decide cuando
+        la fase actual ya está consolidada. No comprometen el camino crítico,
+        solo abren su techo.
+      </div>
+    </section>
+
+    <!-- ============================================================
+         WHAT WE NEED
+    ============================================================ -->
+    <section class="page pagebreak">
+      <div class="section-head">
+        <div class="num">06 · LO QUE NECESITAMOS</div>
+        <h2>El equipo, el capital y las alianzas para ejecutarlo.</h2>
+        <p class="lede">
+          Nada de esto pasa solo. Estas son las tres tracks que tenemos que
+          desbloquear en los próximos 6 meses para que las Fases 2 y 3 lleguen
+          a tiempo.
+        </p>
+      </div>
+
+      <div class="needs-grid">
+        <div class="need-card">
+          <div class="ico">▣</div>
+          <h4>Equipo · 4 perfiles clave</h4>
+          <ul>
+            <li><strong>Solidity senior</strong> con experiencia en audit / formal verification</li>
+            <li><strong>Compliance officer</strong> mexicano con expertise CNBV + UIF</li>
+            <li><strong>Business development</strong> con red de relaciones IFC en México</li>
+            <li><strong>Product designer</strong> senior, fintech / dashboards complejos</li>
+          </ul>
+        </div>
+
+        <div class="need-card">
+          <div class="ico">$</div>
+          <h4>Capital · 3 tramos</h4>
+          <ul>
+            <li><strong>$250K</strong> · auditoría smart contracts (Trail of Bits, Spearbit, OpenZeppelin)</li>
+            <li><strong>$500K</strong> · go-to-market y compliance setup</li>
+            <li><strong>$1M</strong> · subnet propia en Avalanche + validators</li>
+          </ul>
+        </div>
+
+        <div class="need-card">
+          <div class="ico">⚭</div>
+          <h4>Alianzas · 3 partnerships</h4>
+          <ul>
+            <li><strong>Bufete legal</strong> mexicano experto en Ley Fintech y CNBV</li>
+            <li><strong>Custodio</strong> CNBV-aprobado para settlement fiat ↔ on-chain</li>
+            <li><strong>Auditor de smart contracts</strong> con reputación pública internacional</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="closing">
+        <h3>El próximo capítulo se llama <span>Arkangeles</span>.</h3>
+        <p>
+          La Fase 2 arranca en el momento que Arkangeles diga "vamos". El
+          stack está listo, el marco normativo está mapeado, los próximos
+          tres meses están planificados. Lo único que falta es la primera
+          oferta real para escribir el caso de uso que justifique todo lo
+          que viene después.
+        </p>
+        <span class="pill">Pilot Launch · Q1 2026</span>
+      </div>
+
+      <p class="small muted center" style="margin-top: 8mm;">
+        Documento estratégico interno · Sujeto a iteración trimestral · ARCA · 2026
+      </p>
+    </section>
+  </body>
+</html>
