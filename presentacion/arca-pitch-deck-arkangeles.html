@@ -192,7 +192,9 @@
       .statement {
         flex: 1;
         display: flex; flex-direction: column; justify-content: center;
-        padding: 0 24mm;
+        /* padding-bottom keeps the kicker from kissing the slide footer
+           even when the centred content is on the larger side. */
+        padding: 0 24mm 20mm;
       }
       .statement .tag {
         font-size: 11pt;
@@ -200,13 +202,13 @@
         letter-spacing: 0.28em;
         text-transform: uppercase;
         color: var(--accent);
-        margin-bottom: 14mm;
+        margin-bottom: 10mm;
       }
       .bg-light .statement .tag { color: var(--brand); }
       .statement h1 {
-        font-size: 64pt;
+        font-size: 54pt;
         font-weight: 800;
-        line-height: 1.02;
+        line-height: 1.05;
         letter-spacing: -0.035em;
         margin: 0;
         max-width: 260mm;
@@ -226,10 +228,10 @@
         color: transparent;
       }
       .statement .kicker {
-        font-size: 16pt;
+        font-size: 15pt;
         font-weight: 500;
         color: rgba(255, 255, 255, 0.6);
-        margin-top: 12mm;
+        margin-top: 9mm;
         max-width: 230mm;
         line-height: 1.45;
       }
@@ -383,6 +385,13 @@
         color: var(--ink);
       }
       .compare-side.good h3 { color: #fff; }
+      /* When the slide background itself is dark, the "bad" side card
+         needs light text or it reads as black-on-black. */
+      .bg-dark .compare-side.bad h3,
+      .bg-deep .compare-side.bad h3,
+      .bg-aurora .compare-side.bad h3 {
+        color: #fff;
+      }
       .compare-side ul {
         margin: 0; padding: 0; list-style: none;
         flex: 1;
@@ -394,6 +403,17 @@
         position: relative;
         margin-bottom: 4mm;
         color: var(--ink-soft);
+      }
+      /* Same dark-bg fix for the bullet items. */
+      .bg-dark .compare-side.bad li,
+      .bg-deep .compare-side.bad li,
+      .bg-aurora .compare-side.bad li {
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .bg-dark .compare-side.bad .label,
+      .bg-deep .compare-side.bad .label,
+      .bg-aurora .compare-side.bad .label {
+        color: rgba(255, 255, 255, 0.55);
       }
       .compare-side.bad li::before {
         content: '✕';
@@ -482,14 +502,17 @@
         grid-template-columns: repeat(3, 1fr);
         gap: 5mm;
         margin-top: 4mm;
-        flex: 1;
+        /* Cards size to their content (align-items: start) instead of
+           stretching to fill the grid row. Avoids the empty white gap
+           inside shorter cards. Bottoms may differ slightly across the
+           row — that's fine and looks intentional. */
+        align-items: start;
       }
       .reg-card {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 5mm;
         padding: 6mm 6mm 5mm;
-        display: flex; flex-direction: column;
         position: relative;
       }
       .bg-dark .reg-card,
@@ -534,7 +557,6 @@
         color: var(--muted);
         margin: 0 0 5mm;
         line-height: 1.45;
-        flex: 1;
       }
       .bg-dark .reg-card .what,
       .bg-deep .reg-card .what,
@@ -876,10 +898,6 @@
          SLIDE 01 — COVER
     ============================================================ -->
     <section class="slide bg-aurora grid-pattern">
-      <div class="cover-bottom" style="padding-top: 14mm;">
-        <span class="cover-eyebrow" style="margin: 0;">Propuesta para Arkangeles</span>
-        <span><strong>ARCA</strong> · pitch deck</span>
-      </div>
       <div class="cover-content">
         <h1 class="cover-arca">ARCA</h1>
         <p class="cover-sub">
@@ -1248,8 +1266,8 @@
         <div class="compare-2">
           <div class="compare-side bad">
             <div class="label">Sin ARCA · manual</div>
-            <h3 style="color: rgba(255,255,255,0.95);">El status quo</h3>
-            <ul style="color: rgba(255,255,255,0.85);">
+            <h3>El status quo</h3>
+            <ul>
               <li>KYC en documentos físicos o sistemas separados</li>
               <li>Reportes UIF armados a mano cada mes</li>
               <li>Cap table reconciliada con Excel</li>
