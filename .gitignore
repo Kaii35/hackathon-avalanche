@@ -45,3 +45,11 @@ Thumbs.db
 
 # One-off installer scripts (Avalanche CLI etc.)
 install.sh
+
+# Claude Code workspace artifacts (agents, skills, local settings)
+.claude/agents/
+.claude/skills/
+.claude/settings.local.json
+
+# Vercel
+.vercel/
